@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Photo d’élève indisponible">
+  <rect width="240" height="240" rx="28" fill="#eaf0ff"/>
+  <circle cx="120" cy="88" r="43" fill="#8fa9e8"/>
+  <path d="M43 211c5-48 34-76 77-76s72 28 77 76" fill="#1948bd"/>
+  <path d="M68 151l52 28 52-28" fill="none" stroke="#d7aa35" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

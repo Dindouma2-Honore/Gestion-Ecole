@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+  <title id="title">Ambassadors Educational Complex</title>
+  <desc id="desc">Emblème temporaire bleu et or avec un livre et une flamme.</desc>
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe08a"/><stop offset=".5" stop-color="#d7aa35"/><stop offset="1" stop-color="#9a6c08"/></linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#183b8f"/><stop offset="1" stop-color="#07163f"/></linearGradient>
+  </defs>
+  <circle cx="80" cy="80" r="73" fill="url(#blue)" stroke="url(#gold)" stroke-width="4"/>
+  <circle cx="80" cy="80" r="61" fill="none" stroke="#d7aa35" stroke-width="1.5" stroke-dasharray="3 5"/>
+  <path d="M42 88c15-5 28-3 38 5 10-8 23-10 38-5v28c-15-5-28-3-38 5-10-8-23-10-38-5z" fill="#f8fafc" stroke="#d7aa35" stroke-width="2"/>
+  <path d="M80 93v28" stroke="#d7aa35" stroke-width="2"/>
+  <path d="M80 78c-12-8-5-19 2-27 0 8 10 10 8 21 6-4 7-10 6-15 12 13 7 29-7 34-13 5-25-4-24-17 3 5 8 7 15 4z" fill="url(#gold)"/>
+  <text x="80" y="35" text-anchor="middle" fill="#f8fafc" font-family="Georgia,serif" font-size="13" font-weight="700">AEC</text>
+</svg>

@@ -1,0 +1,139 @@
+# deptrac.yaml
+#
+# Règle d'or du projet Ambassadors : un module ne peut JAMAIS dépendre des
+# classes internes (Models, Services) d'un autre module. Il ne peut dépendre
+# que des Contracts (interfaces) exposés par les autres modules.
+#
+# Toute violation de ce fichier fait échouer la Pull Request (voir
+# .github/workflows/ci.yml).
+#
+# Doc : https://github.com/qossmic/deptrac
+
+parameters:
+  paths:
+    - ./app
+
+  exclude_files:
+    - '#.*test.*#'
+
+  layers:
+    # --- Contracts : la seule "surface publique" de chaque module ---
+    - name: SocleContracts
+      collectors:
+        - type: className
+          regex: ^App\\Modules\\Socle\\(Contracts|Traits|Exceptions)\\.*
+
+    - name: ScolariteContracts
+      collectors:
+        - type: className
+          regex: ^App\\Modules\\Scolarite\\Contracts\\.*
+
+    - name: PedagogieContracts
+      collectors:
+        - type: className
+          regex: ^App\\Modules\\Pedagogie\\Contracts\\.*
+
+    - name: RHContracts
+      collectors:
+        - type: className
+          regex: ^App\\Modules\\RH\\Contracts\\.*
+
+    - name: FinancesContracts
+      collectors:
+        - type: className
+          regex: ^App\\Modules\\Finances\\Contracts\\.*
+
+    - name: AssiduiteContracts
+      collectors:
+        - type: className
+          regex: ^App\\Modules\\Assiduite\\Contracts\\.*
+
+    - name: LogistiqueContracts
+      collectors:
+        - type: className
+          regex: ^App\\Modules\\Logistique\\Contracts\\.*
+
+    - name: CommunicationContracts
+      collectors:
+        - type: className
+          regex: ^App\\Modules\\Communication\\Contracts\\.*
+
+    # --- Internals : tout le reste de chaque module (Models, Services, Http...) ---
+    - name: SocleInternal
+      collectors:
+        - type: className
+          regex: ^App\\Modules\\Socle\\(?!(Contracts|Traits|Exceptions)\\).*
+
+    - name: ScolariteInternal
+      collectors:
+        - type: className
+          regex: ^App\\Modules\\Scolarite\\(?!Contracts\\).*
+
+    - name: PedagogieInternal
+      collectors:
+        - type: className
+          regex: ^App\\Modules\\Pedagogie\\(?!Contracts\\).*
+
+    - name: RHInternal
+      collectors:
+        - type: className
+          regex: ^App\\Modules\\RH\\(?!Contracts\\).*
+
+    - name: FinancesInternal
+      collectors:
+        - type: className
+          regex: ^App\\Modules\\Finances\\(?!Contracts\\).*
+
+    - name: AssiduiteInternal
+      collectors:
+        - type: className
+          regex: ^App\\Modules\\Assiduite\\(?!Contracts\\).*
+
+    - name: LogistiqueInternal
+      collectors:
+        - type: className
+          regex: ^App\\Modules\\Logistique\\(?!Contracts\\).*
+
+    - name: CommunicationInternal
+      collectors:
+        - type: className
+          regex: ^App\\Modules\\Communication\\(?!Contracts\\).*
+
+  ruleset:
+    # Chaque module interne peut utiliser ses propres Contracts,
+    # et les Contracts (interfaces) des AUTRES modules — jamais leurs Internals.
+    SocleInternal:
+      - SocleContracts
+      - ScolariteContracts
+      - CommunicationContracts
+    ScolariteInternal:
+      - ScolariteContracts
+      - SocleContracts
+      - FinancesContracts
+    PedagogieInternal:
+      - PedagogieContracts
+      - SocleContracts
+      - ScolariteContracts
+      - RHContracts
+      - LogistiqueContracts
+    RHInternal:
+      - RHContracts
+      - SocleContracts
+      - FinancesContracts
+    FinancesInternal:
+      - FinancesContracts
+      - SocleContracts
+      - ScolariteContracts
+    AssiduiteInternal:
+      - AssiduiteContracts
+      - SocleContracts
+      - ScolariteContracts
+      - RHContracts
+    LogistiqueInternal:
+      - LogistiqueContracts
+      - SocleContracts
+    CommunicationInternal:
+      - CommunicationContracts
+      - SocleContracts
+      - ScolariteContracts
+      - FinancesContracts
