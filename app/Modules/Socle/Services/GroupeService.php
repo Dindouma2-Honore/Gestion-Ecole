@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Socle\Services;
 
+use App\Filament\Support\HabilitationCatalog;
 use App\Models\User;
-use App\Modules\Communication\Contracts\NotificationServiceContract;
 use App\Modules\Socle\Contracts\AuditServiceContract;
+use App\Modules\Socle\Contracts\Events\UserFeatureAccessChanged;
 use App\Modules\Socle\Contracts\GroupeServiceContract;
 use App\Modules\Socle\Exceptions\FonctionnaliteIntrouvableException;
 use App\Modules\Socle\Exceptions\MotifRetraitPermissionGroupeRequisException;
@@ -21,7 +22,6 @@ class GroupeService implements GroupeServiceContract
 {
     public function __construct(
         private readonly AuditServiceContract $audit,
-        private readonly NotificationServiceContract $notifications,
     ) {}
 
     public function creer(array $donnees): object
@@ -99,7 +99,12 @@ class GroupeService implements GroupeServiceContract
             ->get()
             ->keyBy('fonctionnalite_id');
 
-        return Fonctionnalite::query()->where('actif', true)->orderBy('categorie')->orderBy('ordre')->get()
+        return Fonctionnalite::query()
+            ->where('actif', true)
+            ->whereIn('code', HabilitationCatalog::visibleMenuFeatureCodes())
+            ->orderBy('categorie')
+            ->orderBy('ordre')
+            ->get()
             ->map(function (Fonctionnalite $fonctionnalite) use ($records): Fonctionnalite {
                 $record = $records->get($fonctionnalite->id);
                 $fonctionnalite->setAttribute('habilitation_active', (bool) ($record->actif ?? false));
@@ -133,23 +138,24 @@ class GroupeService implements GroupeServiceContract
 
             $groupe->membres()
                 ->where('statut', 'actif')
-                ->each(fn (User $user) => $this->notifierChangement($user, $fonctionnalite, $actif, $groupe));
+                ->each(fn (User $user) => $this->publierChangement($user, $fonctionnalite, $actif, $groupe));
         });
     }
 
-    private function notifierChangement(
+    private function publierChangement(
         User $user,
         Fonctionnalite $fonctionnalite,
         bool $actif,
         object $groupe,
     ): void {
-        $this->notifications->envoyer('in_app', 'habilitation_modifiee', $user, [
-            'fonctionnalite' => $fonctionnalite->nom,
-            'code' => $fonctionnalite->code,
-            'module' => $fonctionnalite->categorie,
-            'groupe' => $groupe->nom,
-            'action' => $actif ? 'accordee' : 'retiree',
-            'date' => now()->toDateTimeString(),
-        ]);
+        event(new UserFeatureAccessChanged(
+            userId: $user->id,
+            featureCode: $fonctionnalite->code,
+            featureName: $fonctionnalite->nom,
+            category: $fonctionnalite->categorie,
+            granted: $actif,
+            occurredAt: now()->toDateTimeString(),
+            groupName: $groupe->nom,
+        ));
     }
 }

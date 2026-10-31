@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Filament\Support\ModuleAccess;
 use App\Http\Middleware\EnsureModuleAccess;
 use App\Models\User;
+use App\Modules\Communication\Filament\Resources\CommunicationTemplateResource;
 use App\Modules\Scolarite\Filament\Resources\InscriptionResource;
 use App\Modules\Socle\Contracts\HabilitationServiceContract;
 use App\Modules\Socle\Exceptions\MotifDesactivationHabilitationRequisException;
@@ -18,6 +19,7 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
+use Spatie\Permission\Models\Role;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
@@ -30,6 +32,37 @@ class SocleA1HabilitationsTest extends TestCase
         parent::setUp();
         $this->seed(RolesAndPermissionsSeeder::class);
         $this->seed(HabilitationsSeeder::class);
+    }
+
+    public function test_catalogue_sync_does_not_grant_access_and_matrix_matches_custom_role(): void
+    {
+        Role::findOrCreate('Auditeur externe', 'web');
+        $service = app(HabilitationServiceContract::class);
+        $count = HabilitationRoleFonctionnalite::count();
+        $this->seed(HabilitationsSeeder::class);
+        $this->assertSame($count, HabilitationRoleFonctionnalite::count());
+        $row = $service->getMatricePourRole('Auditeur externe')->firstWhere('code', 'rh.contrats');
+        $this->assertFalse($row->habilitation_active);
+        $this->assertFalse($service->moduleActifPourRole('Auditeur externe', 'module.rh'));
+        Fonctionnalite::where('code', 'rh.contrats')->update(['actif' => false]);
+        $this->seed(HabilitationsSeeder::class);
+        $this->assertFalse(Fonctionnalite::where('code', 'rh.contrats')->firstOrFail()->actif);
+    }
+
+    public function test_new_feature_denial_blocks_direct_resource_access(): void
+    {
+        $user = User::factory()->create(['statut' => 'actif']);
+        $user->assignRole('Directeur');
+        $role = $user->roles()->firstOrFail();
+        foreach (['module.communication' => true, 'communication.templates' => false] as $code => $active) {
+            HabilitationRoleFonctionnalite::updateOrCreate([
+                'role_id' => $role->id,
+                'fonctionnalite_id' => Fonctionnalite::where('code', $code)->firstOrFail()->id,
+            ], ['actif' => $active]);
+        }
+        $this->assertTrue(ModuleAccess::canAccessModule($user, 'Communication'));
+        $this->assertFalse(ModuleAccess::canAccessComponent($user,
+            CommunicationTemplateResource::class));
     }
 
     public function test_un_enseignant_perd_acces_et_le_composant_disparait_de_la_navigation(): void

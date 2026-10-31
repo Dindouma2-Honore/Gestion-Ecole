@@ -10,7 +10,7 @@ use Livewire\Attributes\Url;
 trait HasCardListLayout
 {
     #[Url(as: 'affichage')]
-    public string $affichage = 'cartes';
+    public string $affichage = 'tableau';
 
     public function usesCardLayout(): bool
     {
@@ -29,6 +29,6 @@ trait HasCardListLayout
             ->label(fn (): string => $this->usesCardLayout() ? 'Vue tableau' : 'Vue cartes')
             ->icon(fn (): string => $this->usesCardLayout() ? 'heroicon-o-table-cells' : 'heroicon-o-squares-2x2')
             ->color('gray')
-            ->action('toggleLayout');
+            ->action(fn (): mixed => $this->toggleLayout());
     }
 }

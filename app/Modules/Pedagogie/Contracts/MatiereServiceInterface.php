@@ -16,6 +16,6 @@ interface MatiereServiceInterface
     /** @return array<int, array{id: int, nom: string, code: string, coefficient: float}> */
     public function toutesActives(): array;
 
-    // Peut lever CodeMatiereDejaUtiliseException (voir Exceptions/) si le code existe déjà.
-    public function creer(string $nom, string $code, float $coefficient, ?string $description = null): array;
+    // Le code peut être omis pour utiliser le générateur automatique du modèle.
+    public function creer(string $nom, ?string $code, float $coefficient, ?string $description = null, string $type = 'matiere'): array;
 }

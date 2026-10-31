@@ -8,8 +8,8 @@ use App\Modules\Finances\Contracts\ConfigurationFraisClasseServiceContract;
 use App\Modules\Finances\Exceptions\RepartitionTranchesInvalideException;
 use App\Modules\Finances\Models\ConfigurationFraisClasse;
 use App\Modules\Scolarite\Models\Classe;
+use App\Modules\Scolarite\Models\Niveau;
 use App\Modules\Socle\Models\AnneeScolaire;
-use App\Modules\Socle\Models\Niveau;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -50,7 +50,7 @@ class ConfigurationFraisClasseTest extends TestCase
     public function test_les_tarifs_de_deux_annees_restent_historises(): void
     {
         [$classe, $annee] = $this->contexte();
-        $anneeSuivante = AnneeScolaire::create(['libelle' => '2027-2028', 'date_debut' => '2027-09-01', 'date_fin' => '2028-07-31', 'statut' => 'active']);
+        $anneeSuivante = AnneeScolaire::create(['libelle' => '2027-2028', 'date_debut' => '2027-09-01', 'date_fin' => '2028-07-31', 'status' => 'preparation']);
         $service = app(ConfigurationFraisClasseServiceContract::class);
         $service->configurer($classe->id, $annee->id, 135000, [['ordre' => 1, 'libelle' => 'Total', 'montant' => 135000, 'date_echeance' => '2026-09-15']]);
         $service->configurer($classe->id, $anneeSuivante->id, 150000, [['ordre' => 1, 'libelle' => 'Total', 'montant' => 150000, 'date_echeance' => '2027-09-15']]);

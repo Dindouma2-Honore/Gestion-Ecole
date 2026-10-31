@@ -15,23 +15,31 @@ class BilanJournalierScolariteService implements BilanJournalierScolariteContrac
     public function getBilan(DateTimeInterface $date): object
     {
         $jour = CarbonImmutable::instance($date);
-        $paiements = Paiement::query()
-            ->with('fraisDivers.poste')
+        $tousPaiements = Paiement::query()
+            ->with(['fraisDivers.poste', 'annulations'])
             ->whereBetween('created_at', [$jour->startOfDay(), $jour->endOfDay()])
-            ->where('statut', 'valide')
             ->orderByDesc('created_at')
             ->get();
-        $paiements->each(fn (Paiement $paiement) => $paiement->setAttribute(
+
+        $tousPaiements->each(fn (Paiement $paiement) => $paiement->setAttribute(
             'type_frais_libelle',
             $this->libelleTypeFrais($paiement),
         ));
 
-        $totauxParType = $paiements
+        $paiementsValides = $tousPaiements->where('statut', 'valide');
+        $paiementsAnnules = $tousPaiements->where('statut', 'annule');
+
+        $totalValide = round((float) $paiementsValides->sum('montant'), 2);
+        $totalAnnule = round((float) $paiementsAnnules->sum('montant'), 2);
+        $net = round($totalValide - $totalAnnule, 2);
+
+        $totauxParType = $paiementsValides
             ->groupBy('type_frais_libelle')
             ->map(fn (Collection $elements): float => round((float) $elements->sum('montant'), 2))
             ->sortDesc()
             ->all();
-        $totauxParMode = $paiements
+
+        $totauxParMode = $paiementsValides
             ->groupBy(fn (Paiement $paiement): string => $paiement->mode ?: 'Non renseigné')
             ->map(fn (Collection $elements): float => round((float) $elements->sum('montant'), 2))
             ->sortDesc()
@@ -39,11 +47,14 @@ class BilanJournalierScolariteService implements BilanJournalierScolariteContrac
 
         return (object) [
             'date' => $jour->startOfDay(),
-            'total' => round((float) $paiements->sum('montant'), 2),
-            'nombre_paiements' => $paiements->count(),
+            'total' => $totalValide,
+            'total_annule' => $totalAnnule,
+            'net' => $net,
+            'nombre_paiements' => $paiementsValides->count(),
+            'nombre_annulations' => $paiementsAnnules->count(),
             'totaux_par_type' => $totauxParType,
             'totaux_par_mode' => $totauxParMode,
-            'paiements' => $paiements,
+            'paiements' => $tousPaiements,
         ];
     }
 

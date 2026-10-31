@@ -1,0 +1,433 @@
+[
+  {
+    "name": "parent inscription confirmee",
+    "code": "parent_inscription_confirmee",
+    "provider_template_name": "parent_inscription_confirmee",
+    "audience": "PARENT",
+    "module": "SCOLARITE",
+    "trigger_event": "parent_inscription_confirmee",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}},\n\nL’inscription de {{2}} en classe de {{3}} pour l’année scolaire {{4}} est confirmée.\nMatricule : {{5}}.\n\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Parent Fictif — TEST"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "student_name",
+        "example": "Élève Fictif — TEST"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "class_name",
+        "example": "6e A"
+      },
+      {
+        "component": "BODY",
+        "position": 4,
+        "key": "school_year",
+        "example": "2026-2027"
+      },
+      {
+        "component": "BODY",
+        "position": 5,
+        "key": "student_number",
+        "example": "AEC-TEST-00125"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "parent absence eleve",
+    "code": "parent_absence_eleve",
+    "provider_template_name": "parent_absence_eleve",
+    "audience": "PARENT",
+    "module": "ASSIDUITE",
+    "trigger_event": "parent_absence_eleve",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, une absence de {{2}} a été enregistrée le {{3}}. Merci de contacter la vie scolaire.",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Parent Fictif — TEST"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "student_name",
+        "example": "Élève Fictif — TEST"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "date",
+        "example": "14 septembre 2026"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "parent bulletin disponible",
+    "code": "parent_bulletin_disponible",
+    "provider_template_name": "parent_bulletin_disponible",
+    "audience": "PARENT",
+    "module": "PEDAGOGIE",
+    "trigger_event": "parent_bulletin_disponible",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, le bulletin de {{2}} pour {{3}} est disponible auprès de l’établissement. Merci.",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Parent Fictif — TEST"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "student_name",
+        "example": "Élève Fictif — TEST"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "academic_period",
+        "example": "le premier trimestre"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "parent bulletin document",
+    "code": "parent_bulletin_document",
+    "provider_template_name": "parent_bulletin_document",
+    "audience": "PARENT",
+    "module": "PEDAGOGIE",
+    "trigger_event": "parent_bulletin_document",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "DOCUMENT",
+    "body": "Bonjour {{1}},\n\nVeuillez trouver ci-joint le bulletin scolaire de {{2}} pour {{3}}.\nClasse : {{4}}.\n\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Parent Fictif — TEST"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "student_name",
+        "example": "Élève Fictif — TEST"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "academic_period",
+        "example": "le premier trimestre"
+      },
+      {
+        "component": "BODY",
+        "position": 4,
+        "key": "class_name",
+        "example": "6e A"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "parent paiement confirme",
+    "code": "parent_paiement_confirme",
+    "provider_template_name": "parent_paiement_confirme",
+    "audience": "PARENT",
+    "module": "FINANCES",
+    "trigger_event": "parent_paiement_confirme",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, votre paiement de {{2}} pour {{3}} a été enregistré. Référence : {{4}}. Merci.",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Parent Fictif — TEST"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "amount",
+        "example": "25 000 FCFA"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "student_name",
+        "example": "Élève Fictif — TEST"
+      },
+      {
+        "component": "BODY",
+        "position": 4,
+        "key": "receipt_number",
+        "example": "RECU-TEST-001"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "parent urgence medicale",
+    "code": "parent_urgence_medicale",
+    "provider_template_name": "parent_urgence_medicale",
+    "audience": "PARENT",
+    "module": "VIE_SCOLAIRE",
+    "trigger_event": "parent_urgence_medicale",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, veuillez contacter immédiatement l’établissement concernant {{2}}. Une prise en charge urgente est en cours.",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Parent Fictif — TEST"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "student_name",
+        "example": "Élève Fictif — TEST"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "parent rendez vous",
+    "code": "parent_rendez_vous",
+    "provider_template_name": "parent_rendez_vous",
+    "audience": "PARENT",
+    "module": "COMMUNICATION",
+    "trigger_event": "parent_rendez_vous",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, votre rendez-vous avec {{2}} est confirmé pour {{3}}. Merci.",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Parent Fictif — TEST"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "staff_name",
+        "example": "la direction"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "date",
+        "example": "18 septembre 2026 à 10 h"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "teacher schedule changed",
+    "code": "teacher_schedule_changed",
+    "provider_template_name": "teacher_schedule_changed",
+    "audience": "TEACHER",
+    "module": "PEDAGOGIE",
+    "trigger_event": "teacher_schedule_changed",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Votre emploi du temps a été modifié. Consultez votre espace enseignant.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Personnel Fictif — TEST"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "staff leave approved",
+    "code": "staff_leave_approved",
+    "provider_template_name": "staff_leave_approved",
+    "audience": "STAFF",
+    "module": "RH",
+    "trigger_event": "staff_leave_approved",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Votre demande de congé a été approuvée.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Personnel Fictif — TEST"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "staff leave rejected",
+    "code": "staff_leave_rejected",
+    "provider_template_name": "staff_leave_rejected",
+    "audience": "STAFF",
+    "module": "RH",
+    "trigger_event": "staff_leave_rejected",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Votre demande de congé a été refusée. Consultez votre espace personnel pour le motif.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Personnel Fictif — TEST"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "code": "parent_recu_document",
+    "name": "Reçu de paiement",
+    "provider_template_name": "parent_recu_document",
+    "audience": "PARENT",
+    "module": "FINANCES",
+    "trigger_event": "parent_recu_document",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "DOCUMENT",
+    "body": "Bonjour {{1}}, le reçu du paiement de {{2}} pour {{3}} est disponible en pièce jointe. Référence : {{4}}. Merci.",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Parent Fictif — TEST"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "amount",
+        "example": "1 000 FCFA"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "student_name",
+        "example": "Élève Fictif — TEST"
+      },
+      {
+        "component": "BODY",
+        "position": 4,
+        "key": "receipt_number",
+        "example": "RECU-TEST-001"
+      }
+    ],
+    "buttons": []
+  },
+  {
+    "code": "staff_payslip_available",
+    "name": "Bulletin de paie disponible",
+    "provider_template_name": "staff_payslip_available",
+    "audience": "STAFF",
+    "module": "RH",
+    "trigger_event": "staff_payslip_available",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, votre bulletin de paie pour {{2}} est disponible auprès du service RH. Merci.",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Personnel Fictif — TEST"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "pay_period",
+        "example": "septembre 2026"
+      }
+    ],
+    "buttons": []
+  },
+  {
+    "code": "staff_salary_paid",
+    "name": "Paiement du salaire enregistré",
+    "provider_template_name": "staff_salary_paid",
+    "audience": "STAFF",
+    "module": "RH",
+    "trigger_event": "staff_salary_paid",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, le paiement de votre salaire pour {{2}} a été enregistré le {{3}}. Consultez le service RH pour le détail. Merci.",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Personnel Fictif — TEST"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "pay_period",
+        "example": "septembre 2026"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "payment_date",
+        "example": "14 septembre 2026"
+      }
+    ],
+    "buttons": []
+  }
+]

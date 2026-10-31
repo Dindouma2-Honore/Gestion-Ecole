@@ -13,7 +13,8 @@ class EquipementHistoriqueLocalisation extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'equipement_id', 'ancienne_salle_id', 'nouvelle_salle_id', 'date_deplacement',
+        'equipement_id', 'ancienne_salle_id', 'nouvelle_salle_id', 'responsable_id',
+        'effectue_par', 'motif', 'date_deplacement',
     ];
 
     protected $casts = [

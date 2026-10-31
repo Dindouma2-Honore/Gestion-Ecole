@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Modules\RH\Models\Employe;
 use App\Modules\Socle\Models\Groupe;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -47,6 +49,18 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
     public function groupes(): BelongsToMany
     {
         return $this->belongsToMany(Groupe::class, 'groupe_user');
+    }
+
+    public function employe(): HasOne
+    {
+        return $this->hasOne(Employe::class, 'user_id');
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (User $user): void {
+            Employe::where('user_id', $user->id)->update(['user_id' => null]);
+        });
     }
 
     /**

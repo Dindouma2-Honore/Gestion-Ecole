@@ -3,11 +3,14 @@
 namespace App\Modules\RH\Models;
 
 use App\Models\User;
+use App\Modules\Socle\Traits\AuditsSensitiveChanges;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Prime extends Model
 {
+    use AuditsSensitiveChanges;
+
     protected $table = 'primes';
 
     protected $fillable = [
@@ -18,6 +21,7 @@ class Prime extends Model
         'annee',
         'justification',
         'statut',
+        'bulletin_paie_id',
         'proposee_par',
         'validee_par',
     ];

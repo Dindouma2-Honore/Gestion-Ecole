@@ -39,7 +39,7 @@ class UserProfileTest extends TestCase
 
     public function test_user_creation_is_disabled_in_administration(): void
     {
-        $this->assertFalse(UserResource::shouldRegisterNavigation());
+        $this->assertTrue(UserResource::shouldRegisterNavigation());
         $this->assertFalse(UserResource::canCreate());
     }
 }

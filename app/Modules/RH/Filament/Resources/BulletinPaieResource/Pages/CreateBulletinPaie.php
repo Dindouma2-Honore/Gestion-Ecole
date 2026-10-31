@@ -3,7 +3,11 @@
 namespace App\Modules\RH\Filament\Resources\BulletinPaieResource\Pages;
 
 use App\Modules\RH\Filament\Resources\BulletinPaieResource;
+use App\Modules\RH\Models\BulletinPaie;
+use App\Modules\Socle\Contracts\AnneeScolaireServiceContract;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\Eloquent\Model;
 
 class CreateBulletinPaie extends CreateRecord
 {
@@ -12,7 +16,7 @@ class CreateBulletinPaie extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         if (empty($data['annee_scolaire_id'])) {
-            $anneeScolaireService = app(\App\Modules\Socle\Contracts\AnneeScolaireServiceContract::class);
+            $anneeScolaireService = app(AnneeScolaireServiceContract::class);
             try {
                 $data['annee_scolaire_id'] = $anneeScolaireService->getAnneeCouranteId();
             } catch (\Throwable) {
@@ -21,5 +25,26 @@ class CreateBulletinPaie extends CreateRecord
         }
 
         return $data;
+    }
+
+    protected function handleRecordCreation(array $data): Model
+    {
+        $existe = BulletinPaie::query()
+            ->where('employe_id', $data['employe_id'])
+            ->where('mois', $data['mois'])
+            ->where('annee', $data['annee'])
+            ->exists();
+
+        if ($existe) {
+            Notification::make()
+                ->title('Bulletin déjà existant')
+                ->body('Un bulletin existe déjà pour cet employé sur cette période.')
+                ->danger()
+                ->send();
+
+            $this->halt();
+        }
+
+        return parent::handleRecordCreation($data);
     }
 }

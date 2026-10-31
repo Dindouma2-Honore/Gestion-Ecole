@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Communication\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Modules\Communication\Filament\Resources\RendezVousResource\Pages;
 use App\Modules\Communication\Models\RendezVous;
 use BackedEnum;
@@ -16,6 +17,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 use UnitEnum;
 
 class RendezVousResource extends Resource
@@ -38,7 +40,7 @@ class RendezVousResource extends Resource
             ->components([
                 Select::make('parent_id')
                     ->label('Parent / Tuteur')
-                    ->options(fn (): array => \Illuminate\Support\Facades\DB::table('parents_tuteurs')
+                    ->options(fn (): array => DB::table('parents_tuteurs')
                         ->get()
                         ->mapWithKeys(fn ($p) => [$p->id => trim("{$p->prenom} {$p->nom}")])
                         ->toArray()
@@ -81,7 +83,7 @@ class RendezVousResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordModal::configure($table
             ->columns([
                 Tables\Columns\TextColumn::make('id')->sortable(),
                 Tables\Columns\TextColumn::make('parent')
@@ -112,7 +114,7 @@ class RendezVousResource extends Resource
             ])
             ->actions([
                 EditAction::make(),
-            ]);
+            ]), static::class);
     }
 
     public static function getPages(): array

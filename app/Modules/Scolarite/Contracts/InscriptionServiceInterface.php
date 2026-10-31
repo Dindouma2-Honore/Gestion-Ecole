@@ -60,6 +60,18 @@ interface InscriptionServiceInterface
      */
     public function getFraisRestants(int $inscriptionId): float;
 
+    public function annulerInscription(int $inscriptionId, string $motif): void;
+
+    public function demanderAnnulation(int $inscriptionId, string $motif, ?int $demandeurId = null): void;
+
+    public function viserAnnulation(int $inscriptionId, ?string $notes = null, ?int $comptableId = null): void;
+
+    public function validerAnnulation(int $inscriptionId, ?string $motifValidation = null, ?int $validateurId = null): void;
+
+    public function rejeterAnnulation(int $inscriptionId, string $motifRejet, ?int $validateurId = null): void;
+
+    public function transfererClasse(int $inscriptionId, int $nouvelleClasseId, string $motif, ?string $dateTransfert = null): \App\Modules\Scolarite\Models\TransfertAffectation;
+
     /** @return array{inscription_id:int, eleve_id:int, classe_id:int, annee_scolaire_id:int, statut:string} */
     public function getContexteFinancier(int $inscriptionId): array;
 }

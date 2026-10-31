@@ -5,36 +5,32 @@ declare(strict_types=1);
 namespace App\Filament\Widgets;
 
 use App\Filament\Support\AmbassadorsDesign;
-use App\Models\User;
+use App\Modules\Socle\Filament\Resources\UserResource;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 class AdministrationOverview extends StatsOverviewWidget
 {
     protected static bool $isLazy = false;
 
-    protected ?string $heading = 'A1 — Utilisateurs, rôles & permissions';
+    protected ?string $heading = 'A1 — Utilisateurs & permissions';
 
     protected function getStats(): array
     {
         return [
-            Stat::make('Utilisateurs actifs', User::query()->where('statut', 'actif')->count())
+            Stat::make('Utilisateurs actifs', UserResource::getEloquentQuery()->where('statut', 'actif')->count())
                 ->description('Comptes autorisés à accéder à la plateforme')
                 ->descriptionIcon('heroicon-m-users')
                 ->color(AmbassadorsDesign::ADMINISTRATION_KPI_COLOR),
-            Stat::make('Rôles définis', Role::query()->count())
-                ->description('Profils fonctionnels disponibles')
-                ->descriptionIcon('heroicon-m-shield-check')
+            Stat::make('Comptes supprimés', Activity::where('log_name', 'utilisateurs')->where('event', 'deleted')->count())
+                ->description('Comptes retirés de la plateforme')
+                ->descriptionIcon('heroicon-m-trash')
                 ->color(AmbassadorsDesign::ADMINISTRATION_KPI_COLOR),
             Stat::make('Permissions', Permission::query()->count())
                 ->description('Autorisations métier configurées')
                 ->descriptionIcon('heroicon-m-key')
-                ->color(AmbassadorsDesign::ADMINISTRATION_KPI_COLOR),
-            Stat::make('Comptes bloqués', User::query()->whereIn('statut', ['suspendu', 'desactive'])->count())
-                ->description('Comptes nécessitant une vérification')
-                ->descriptionIcon('heroicon-m-lock-closed')
                 ->color(AmbassadorsDesign::ADMINISTRATION_KPI_COLOR),
         ];
     }

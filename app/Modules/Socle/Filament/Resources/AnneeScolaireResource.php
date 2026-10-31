@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Modules\Socle\Filament\Resources;
 
-use App\Filament\Support\AmbassadorsDesign;
 use App\Modules\Socle\Contracts\AnneeScolaireServiceContract;
+use App\Modules\Socle\Enums\AcademicYearStatus;
 use App\Modules\Socle\Filament\Widgets\AnneeScolaireOverview;
 use App\Modules\Socle\Models\AnneeScolaire;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -41,6 +42,11 @@ class AnneeScolaireResource extends Resource
                     ->required(),
                 DatePicker::make('date_fin')
                     ->required(),
+                Select::make('period_system')
+                    ->label('Système de périodes')
+                    ->options(['semester' => 'Semestriel', 'trimester' => 'Trimestriel'])
+                    ->default('trimester')
+                    ->required(),
             ]);
     }
 
@@ -51,33 +57,38 @@ class AnneeScolaireResource extends Resource
                 TextColumn::make('libelle')->sortable()->searchable(),
                 TextColumn::make('date_debut')->date(),
                 TextColumn::make('date_fin')->date(),
-                TextColumn::make('statut')
+                TextColumn::make('status')
                     ->badge()
-                    ->formatStateUsing(fn (string $state): string => AmbassadorsDesign::statutLabels()[$state] ?? ucfirst($state))
-                    ->color(fn (string $state): string => AmbassadorsDesign::statutColor($state)),
+                    ->formatStateUsing(fn (AcademicYearStatus $state): string => match ($state) {
+                        AcademicYearStatus::PREPARATION => 'Préparation',
+                        AcademicYearStatus::ACTIVE => 'Active',
+                        AcademicYearStatus::CLOTURE_EN_COURS => 'Clôture en cours',
+                        AcademicYearStatus::CLOTUREE => 'Clôturée',
+                        AcademicYearStatus::ARCHIVEE => 'Archivée',
+                    }),
             ])
             ->filters([
-                SelectFilter::make('statut')->options([
-                    'brouillon' => 'Brouillon', 'active' => 'Active', 'cloturee' => 'Clôturée', 'archivee' => 'Archivée',
+                SelectFilter::make('status')->options([
+                    'preparation' => 'Préparation', 'active' => 'Active', 'cloture_en_cours' => 'Clôture en cours', 'cloturee' => 'Clôturée', 'archivee' => 'Archivée',
                 ]),
             ])
             ->recordActions([
                 Action::make('activer')
                     ->label('Activer')->icon('heroicon-o-play')->color('success')
                     ->requiresConfirmation()
-                    ->visible(fn (AnneeScolaire $record): bool => $record->statut === AnneeScolaire::STATUT_BROUILLON)
+                    ->visible(fn (AnneeScolaire $record): bool => $record->status === AcademicYearStatus::PREPARATION)
                     ->action(fn (AnneeScolaire $record) => app(AnneeScolaireServiceContract::class)->activerAnnee($record->id)),
                 Action::make('cloturer')
                     ->label('Clôturer')->icon('heroicon-o-lock-closed')->color('warning')
                     ->requiresConfirmation()
-                    ->visible(fn (AnneeScolaire $record): bool => $record->statut === AnneeScolaire::STATUT_ACTIVE)
+                    ->visible(fn (AnneeScolaire $record): bool => $record->status === AcademicYearStatus::ACTIVE)
                     ->action(fn (AnneeScolaire $record) => app(AnneeScolaireServiceContract::class)->cloturerAnnee($record->id)),
                 Action::make('archiver')
                     ->label('Archiver')->icon('heroicon-o-archive-box')->color('danger')
                     ->requiresConfirmation()
-                    ->visible(fn (AnneeScolaire $record): bool => $record->statut === AnneeScolaire::STATUT_CLOTUREE)
+                    ->visible(fn (AnneeScolaire $record): bool => $record->status === AcademicYearStatus::CLOTUREE)
                     ->action(fn (AnneeScolaire $record) => app(AnneeScolaireServiceContract::class)->archiverAnnee($record->id)),
-                EditAction::make(),
+                EditAction::make()->visible(fn (AnneeScolaire $record): bool => ! $record->isReadonly()),
             ]);
     }
 

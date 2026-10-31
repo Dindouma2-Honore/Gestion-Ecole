@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\RH\Filament\Resources;
 
+use App\Filament\Support\AmbassadorsDesign;
 use App\Modules\RH\Filament\Resources\PersonnelRoleResource\Pages;
-use Filament\Actions\EditAction;
+use App\Modules\RH\Filament\Support\RhActions;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
@@ -27,18 +29,23 @@ class PersonnelRoleResource extends Resource
     {
         return $schema->components([
             TextInput::make('name')->label('Nom du rôle')->required()->maxLength(100)->unique(ignoreRecord: true),
-            TextInput::make('guard_name')->label('Contexte')->default('web')->required()->readOnly(),
         ]);
     }
 
     public static function table(Table $table): Table
     {
+        AmbassadorsDesign::configureTable($table, null);
+
         return $table->columns([
             TextColumn::make('name')->label('Rôle')->searchable()->sortable(),
             TextColumn::make('users_count')->counts('users')->label('Utilisateurs associés')->sortable(),
             TextColumn::make('created_at')->label('Créé le')->dateTime('d/m/Y')->sortable(),
-        ])->actions([
-            EditAction::make(),
+        ])->defaultSort('created_at', 'desc')->actions([
+            RhActions::edit()
+                ->successNotification(fn (Role $record): Notification => Notification::make()
+                    ->color('gray')
+                    ->title('Rôle mis à jour')
+                    ->body('Le rôle « '.$record->name.' » a été mis à jour avec succès.')),
         ]);
     }
 

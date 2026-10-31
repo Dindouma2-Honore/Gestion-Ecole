@@ -2,6 +2,7 @@
 
 namespace App\Modules\Assiduite\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Modules\Assiduite\Filament\Resources\VisiteurResource\Pages;
 use App\Modules\Assiduite\Models\Visiteur;
 use Filament\Forms\Components\DateTimePicker;
@@ -17,6 +18,8 @@ use Illuminate\Support\Facades\Auth;
 
 class VisiteurResource extends Resource
 {
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $model = Visiteur::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-identification';
@@ -61,7 +64,7 @@ class VisiteurResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordModal::configure($table
             ->columns([
                 TextColumn::make('nom')->searchable()->sortable(),
                 TextColumn::make('telephone')->searchable(),
@@ -71,7 +74,7 @@ class VisiteurResource extends Resource
                 TextColumn::make('heure_sortie')->dateTime()->sortable(),
                 IconColumn::make('autorisation_prealable')->boolean(),
                 IconColumn::make('incident_signale')->boolean()->color('danger'),
-            ]);
+            ]), static::class);
     }
 
     public static function getPages(): array

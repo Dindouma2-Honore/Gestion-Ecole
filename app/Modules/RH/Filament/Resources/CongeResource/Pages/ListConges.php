@@ -2,8 +2,9 @@
 
 namespace App\Modules\RH\Filament\Resources\CongeResource\Pages;
 
+use App\Filament\Support\AmbassadorsDesign;
 use App\Modules\RH\Filament\Resources\CongeResource;
-use Filament\Actions;
+use App\Modules\RH\Filament\Support\RhActions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListConges extends ListRecords
@@ -13,7 +14,12 @@ class ListConges extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            RhActions::create()
+                ->label('Créer un congé')
+                ->modal(true)
+                ->modalHeading('Créer un congé')
+                ->modalWidth('none')->extraModalWindowAttributes(AmbassadorsDesign::goldenModalAttributes())
+                ->createAnother(false),
         ];
     }
 }

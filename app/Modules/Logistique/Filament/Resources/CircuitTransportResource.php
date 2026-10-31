@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Logistique\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Modules\Logistique\Filament\Resources\CircuitTransportResource\Pages;
 use App\Modules\Logistique\Models\CircuitTransport;
 use BackedEnum;
@@ -17,6 +18,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 use UnitEnum;
 
 class CircuitTransportResource extends Resource
@@ -29,12 +31,15 @@ class CircuitTransportResource extends Resource
 
     protected static ?string $navigationLabel = 'Circuits transport';
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $modelLabel = 'circuit';
 
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
+                TextInput::make('code')->label('Code')->unique(ignoreRecord: true)->maxLength(40),
                 TextInput::make('nom')->label('Nom du circuit')->required()->maxLength(100),
 
                 Select::make('vehicule_id')
@@ -42,21 +47,18 @@ class CircuitTransportResource extends Resource
                     ->relationship('vehicule', 'immatriculation')
                     ->required(),
 
-                TextInput::make('chauffeur_id')
-                    ->label('ID chauffeur')
-                    ->numeric()
-                    ->required()
-                    ->helperText('En attendant un Select alimenté par le module RH (employés).'),
+                Select::make('chauffeur_id')->label('Chauffeur')->searchable()->preload()
+                    ->options(fn () => DB::table('employes')->where('statut', 'actif')->orderBy('nom')->get()->mapWithKeys(fn ($e) => [$e->id => trim("{$e->nom} {$e->prenom}")])->all())->required(),
 
-                TextInput::make('accompagnateur_id')
-                    ->label('ID accompagnateur')
-                    ->numeric(),
+                Select::make('accompagnateur_id')->label('Accompagnateur')->searchable()->preload()
+                    ->options(fn () => DB::table('employes')->where('statut', 'actif')->orderBy('nom')->get()->mapWithKeys(fn ($e) => [$e->id => trim("{$e->nom} {$e->prenom}")])->all()),
 
                 Repeater::make('arrets')
                     ->relationship('arrets')
                     ->label('Arrêts (dans l\'ordre)')
                     ->schema([
                         TextInput::make('nom')->label('Nom de l\'arrêt')->required(),
+                        TextInput::make('lieu')->label('Lieu'),
                         TextInput::make('ordre')->label('Ordre')->numeric()->required(),
                         TimePicker::make('heure_passage_matin')->label('Passage matin'),
                         TimePicker::make('heure_passage_soir')->label('Passage soir'),
@@ -68,7 +70,7 @@ class CircuitTransportResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        $table = $table
             ->columns([
                 Tables\Columns\TextColumn::make('nom')->label('Circuit')->searchable(),
                 Tables\Columns\TextColumn::make('vehicule.immatriculation')->label('Véhicule'),
@@ -82,6 +84,8 @@ class CircuitTransportResource extends Resource
                     ->openUrlInNewTab(),
                 EditAction::make(),
             ]);
+
+        return RecordModal::configure($table, static::class);
     }
 
     public static function getPages(): array

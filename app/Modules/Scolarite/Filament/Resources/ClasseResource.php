@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Scolarite\Filament\Resources;
 
+use App\Modules\Finances\Contracts\BilanFinancierClasseServiceContract;
 use App\Modules\Scolarite\Filament\Resources\ClasseResource\Pages;
+use App\Modules\Scolarite\Filament\Support\ScolariteActions;
 use App\Modules\Scolarite\Models\Classe;
 use BackedEnum;
 use Filament\Forms\Components\Select;
@@ -22,11 +24,14 @@ class ClasseResource extends Resource
 {
     protected static ?string $model = Classe::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-academic-cap';
+    /** @var array<int, array<string, int|float>> */
+    private static array $resumes = [];
 
-    protected static string|UnitEnum|null $navigationGroup = 'Scolarité';
+    protected static string|UnitEnum|null $navigationGroup = 'Organisation scolaire';
 
     protected static ?string $navigationLabel = 'Classes';
+
+    protected static ?int $navigationSort = 5;
 
     protected static ?string $modelLabel = 'classe';
 
@@ -103,6 +108,8 @@ class ClasseResource extends Resource
             && method_exists($livewire, 'usesCardLayout')
             && $livewire->usesCardLayout();
 
+        ScolariteActions::configureTable($table, 'edit');
+
         return $table
             ->columns($cards ? self::cardColumns() : self::tableColumns())
             ->contentGrid($cards ? [
@@ -110,7 +117,12 @@ class ClasseResource extends Resource
                 'sm' => 2,
                 'md' => 3,
                 'lg' => 4,
-            ] : null);
+            ] : null)
+            ->actions([
+                ScolariteActions::edit(),
+                ScolariteActions::view(),
+                ScolariteActions::delete(),
+            ]);
     }
 
     /** @return array<int, mixed> */
@@ -133,15 +145,31 @@ class ClasseResource extends Resource
                 ->formatStateUsing(fn ($state) => $annees[$state] ?? '—'),
 
             Tables\Columns\TextColumn::make('capacite_max')->label('Capacité max'),
+            Tables\Columns\TextColumn::make('effectif')
+                ->label('Inscrits (F/G)')
+                ->getStateUsing(fn (Classe $record): string => sprintf(
+                    '%d (%d/%d)', self::resume($record)['total'], self::resume($record)['filles'], self::resume($record)['garcons']
+                )),
+            Tables\Columns\TextColumn::make('attendu')
+                ->label('Attendu')
+                ->getStateUsing(fn (Classe $record): float => (float) self::resume($record)['attendu'])
+                ->money('XAF'),
+            Tables\Columns\TextColumn::make('encaisse')
+                ->label('Encaissé')
+                ->getStateUsing(fn (Classe $record): float => (float) self::resume($record)['encaisse'])
+                ->money('XAF')
+                ->color('success'),
+            Tables\Columns\TextColumn::make('reste')
+                ->label('Reste')
+                ->getStateUsing(fn (Classe $record): float => (float) self::resume($record)['reste'])
+                ->money('XAF')
+                ->color(fn ($state): string => (float) $state > 0 ? 'warning' : 'success'),
             Tables\Columns\TextColumn::make('statut')->badge(),
 
             Tables\Columns\TextColumn::make('professeur_principal_id')
                 ->label('Professeur principal')
                 ->formatStateUsing(fn ($state) => $state ? ($enseignants[$state] ?? '—') : '—'),
 
-            Tables\Columns\TextColumn::make('inscriptions_count')
-                ->label('Effectif')
-                ->counts(['inscriptions' => fn ($q) => $q->where('statut', 'validee')]),
         ];
     }
 
@@ -214,11 +242,38 @@ class ClasseResource extends Resource
         }
     }
 
+    /** @return array{total:int,filles:int,garcons:int,attendu:float,encaisse:float,reste:float} */
+    public static function resume(Classe $classe): array
+    {
+        if (isset(self::$resumes[$classe->id])) {
+            return self::$resumes[$classe->id];
+        }
+
+        $eleves = $classe->inscriptions()
+            ->where('annee_scolaire_id', $classe->annee_scolaire_id)
+            ->whereIn('statut', ['active', 'validee'])
+            ->with('eleve:id,sexe')
+            ->get()->pluck('eleve')->filter();
+        $finances = app(BilanFinancierClasseServiceContract::class)->calculer(
+            $classe->id,
+            (int) $classe->annee_scolaire_id,
+            $eleves->pluck('id')->map(fn ($id): int => (int) $id)->values()->all(),
+        );
+
+        return self::$resumes[$classe->id] = [
+            'total' => $eleves->count(),
+            'filles' => $eleves->where('sexe', 'F')->count(),
+            'garcons' => $eleves->where('sexe', 'M')->count(),
+            ...$finances,
+        ];
+    }
+
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListClasses::route('/'),
             'create' => Pages\CreateClasse::route('/create'),
+            'view' => Pages\ViewClasse::route('/{record}'),
             'edit' => Pages\EditClasse::route('/{record}/edit'),
         ];
     }

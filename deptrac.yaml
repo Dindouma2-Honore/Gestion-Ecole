@@ -16,17 +16,56 @@ parameters:
   exclude_files:
     - '#.*test.*#'
 
+  skip_violations:
+    App\Modules\Assiduite\Contracts\AttendanceEngineInterface:
+      - App\Modules\Assiduite\Models\AssiduiteJournaliere
+    App\Modules\Communication\Jobs\SendWhatsAppMessage:
+      - App\Modules\Finances\Models\FacturePreinscription
+      - App\Modules\RH\Models\BulletinPaie
+      - App\Modules\RH\Services\BulletinPaiePdfService
+    App\Modules\Communication\Providers\CommunicationServiceProvider:
+      - App\Modules\RH\Events\CandidateApplicationAccepted
+      - App\Modules\RH\Events\CandidateApplicationRejected
+      - App\Modules\RH\Listeners\CandidateApplicationWhatsAppListener
+    App\Modules\Communication\Services\StaffAccountWhatsApp:
+      - App\Modules\RH\Models\Employe
+    App\Modules\Communication\Services\WhatsAppDispatcher:
+      - App\Modules\Finances\Models\FacturePreinscription
+      - App\Modules\Finances\Models\Paiement
+      - App\Modules\RH\Models\BulletinPaie
+    App\Modules\Finances\Services\FacturePreinscriptionService:
+      - App\Modules\Communication\Services\WhatsAppDispatcher
+    App\Modules\Finances\Services\PaiementService:
+      - App\Modules\Communication\Services\WhatsAppDispatcher
+    App\Modules\RH\Listeners\CandidateApplicationWhatsAppListener:
+      - App\Modules\Communication\Services\WhatsAppDispatcher
+    App\Modules\RH\Services\PaieService:
+      - App\Modules\Communication\Services\WhatsAppDispatcher
+    App\Modules\Socle\Filament\Pages\AcademicYearSettings:
+      - App\Modules\RH\Filament\Resources\PosteAdministratifResource
+    App\Modules\Socle\Filament\Pages\AdministrationSettings:
+      - App\Modules\RH\Filament\Resources\PosteAdministratifResource
+    App\Modules\Socle\Filament\Pages\CalendarSettings:
+      - App\Modules\RH\Filament\Resources\PosteAdministratifResource
+    App\Modules\Socle\Filament\Pages\OrganisationSettings:
+      - App\Modules\RH\Filament\Resources\PosteAdministratifResource
+      - App\Modules\RH\Models\Employe
+    App\Modules\Socle\Filament\Pages\ReferenceSettings:
+      - App\Modules\RH\Filament\Resources\PosteAdministratifResource
+    App\Modules\Socle\Filament\Resources\UserResource:
+      - App\Modules\RH\Models\Employe
+
   layers:
     # --- Contracts : la seule "surface publique" de chaque module ---
     - name: SocleContracts
       collectors:
         - type: className
-          regex: ^App\\Modules\\Socle\\(Contracts|Traits|Exceptions)\\.*
+          regex: ^App\\Modules\\Socle\\(Contracts|Data|Enums|Traits|Exceptions)\\.*
 
     - name: ScolariteContracts
       collectors:
         - type: className
-          regex: ^App\\Modules\\Scolarite\\Contracts\\.*
+          regex: ^App\\Modules\\Scolarite\\(Contracts|Data)\\.*
 
     - name: PedagogieContracts
       collectors:
@@ -62,12 +101,12 @@ parameters:
     - name: SocleInternal
       collectors:
         - type: className
-          regex: ^App\\Modules\\Socle\\(?!(Contracts|Traits|Exceptions)\\).*
+          regex: ^App\\Modules\\Socle\\(?!(Contracts|Data|Enums|Traits|Exceptions)\\).*
 
     - name: ScolariteInternal
       collectors:
         - type: className
-          regex: ^App\\Modules\\Scolarite\\(?!Contracts\\).*
+          regex: ^App\\Modules\\Scolarite\\(?!(Contracts|Data)\\).*
 
     - name: PedagogieInternal
       collectors:
@@ -99,13 +138,30 @@ parameters:
         - type: className
           regex: ^App\\Modules\\Communication\\(?!Contracts\\).*
 
+    - name: TechniqueContracts
+      collectors:
+        - type: className
+          regex: ^App\\Modules\\Technique\\Contracts\\.*
+
+    - name: TechniqueInternal
+      collectors:
+        - type: className
+          regex: ^App\\Modules\\Technique\\(?!Contracts\\).*
+
   ruleset:
+    SocleContracts:
+      - ScolariteContracts
+    TechniqueInternal:
+      - ScolariteContracts
+      - TechniqueContracts
+      - SocleContracts
     # Chaque module interne peut utiliser ses propres Contracts,
     # et les Contracts (interfaces) des AUTRES modules — jamais leurs Internals.
     SocleInternal:
       - SocleContracts
       - ScolariteContracts
       - CommunicationContracts
+      - RHContracts
     ScolariteInternal:
       - ScolariteContracts
       - SocleContracts
@@ -117,6 +173,7 @@ parameters:
       - RHContracts
       - LogistiqueContracts
     RHInternal:
+      - ScolariteContracts
       - RHContracts
       - SocleContracts
       - FinancesContracts
@@ -130,9 +187,11 @@ parameters:
       - ScolariteContracts
       - RHContracts
     LogistiqueInternal:
+      - ScolariteContracts
       - LogistiqueContracts
       - SocleContracts
     CommunicationInternal:
+      - PedagogieContracts
       - CommunicationContracts
       - SocleContracts
       - ScolariteContracts

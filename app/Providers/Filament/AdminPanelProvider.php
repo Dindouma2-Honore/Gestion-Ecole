@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use App\Filament\Auth\Login;
 use App\Filament\Pages\EditProfile;
 use App\Filament\Support\AmbassadorsDesign;
+use App\Filament\Support\ModuleExperience;
 use App\Filament\Support\ModuleNavigation;
 use App\Http\Middleware\EnsureModuleAccess;
 use App\Http\Middleware\ForcePasswordChangeMiddleware;
@@ -42,8 +43,30 @@ class AdminPanelProvider extends PanelProvider
             ->revealablePasswords()
             ->databaseNotifications()
             ->renderHook(
+                PanelsRenderHook::PAGE_START,
+                fn (array $scopes): string => view('filament.partials.module-dashboard-hero', [
+                    'module' => ModuleExperience::dashboard($scopes),
+                ])->render()
+            )
+            ->renderHook(
+                PanelsRenderHook::PAGE_END,
+                fn (array $scopes): string => view('filament.partials.module-dashboard-shortcuts', [
+                    'module' => ModuleExperience::dashboard($scopes),
+                ])->render()
+            )
+            ->renderHook(
+                PanelsRenderHook::PAGE_START,
+                fn (array $scopes): string => view('filament.partials.administration-help', [
+                    'help' => ModuleExperience::help($scopes),
+                ])->render()
+            )
+            ->renderHook(
+                PanelsRenderHook::TOPBAR_START,
+                fn (): string => view('filament.partials.module-topbar')->render()
+            )
+            ->renderHook(
                 PanelsRenderHook::BODY_END,
-                fn (): string => Blade::render('<x-global-loading-overlay />')
+                fn (): string => Blade::render('<x-global-loading-overlay /><x-success-notification-timeout /><script>if ("serviceWorker" in navigator) { window.addEventListener("load", () => navigator.serviceWorker.register("/service-worker.js", { scope: "/" }).catch(() => {}), { once: true }); }</script>')
             )
             ->brandName('Ambassadors Educational Complex')
             ->brandLogo(asset('images/logo.png'))
@@ -64,6 +87,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Modules/Scolarite/Filament/Resources'), for: 'App\Modules\Scolarite\Filament\Resources')
             ->discoverResources(in: app_path('Modules/Communication/Filament/Resources'), for: 'App\Modules\Communication\Filament\Resources')
             ->discoverResources(in: app_path('Modules/Assiduite/Filament/Resources'), for: 'App\Modules\Assiduite\Filament\Resources')
+            ->discoverPages(in: app_path('Modules/Technique/Filament/Pages'), for: 'App\Modules\Technique\Filament\Pages')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->discoverPages(in: app_path('Modules/Socle/Filament/Pages'), for: 'App\Modules\Socle\Filament\Pages')
             ->discoverPages(in: app_path('Modules/RH/Filament/Pages'), for: 'App\Modules\RH\Filament\Pages')

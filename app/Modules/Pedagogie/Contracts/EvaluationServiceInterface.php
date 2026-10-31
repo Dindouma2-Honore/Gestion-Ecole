@@ -20,10 +20,15 @@ interface EvaluationServiceInterface
         string $titre,
         string $dateEvaluation,
         float $bareme,
-        ?UploadedFile $sujet = null
+        ?UploadedFile $sujet = null,
+        ?int $anneeScolaireId = null,
+        ?int $periodeId = null,
+        string $typeEvaluation = 'devoir',
+        float $coefficient = 1.0,
+        string $modeEvaluation = 'note'
     ): object;
 
     public function validerSujet(int $evaluationId, int $validateurId): void;
 
-    public function rejeterSujet(int $evaluationId, string $motif): void;
+    public function rejeterSujet(int $evaluationId, string $motif, ?int $validateurId = null): void;
 }

@@ -13,9 +13,9 @@ use App\Modules\Socle\Contracts\HabilitationServiceContract;
 use App\Modules\Socle\Exceptions\MotifRetraitPermissionGroupeRequisException;
 use App\Modules\Socle\Filament\Pages\ManageGroupePermissions;
 use App\Modules\Socle\Filament\Pages\ManageHabilitations;
+use App\Modules\Socle\Filament\Resources\GroupeResource\Pages\ListGroupes;
 use App\Modules\Socle\Filament\Resources\PermissionResource;
 use App\Modules\Socle\Filament\Resources\RoleResource;
-use App\Modules\Socle\Filament\Resources\GroupeResource\Pages\ListGroupes;
 use App\Modules\Socle\Models\ActivityLog;
 use App\Modules\Socle\Models\Fonctionnalite;
 use App\Modules\Socle\Models\Groupe;
@@ -132,8 +132,7 @@ class SocleA9GroupesTest extends TestCase
         $notifications = Mockery::mock(NotificationServiceContract::class);
         $notifications->shouldReceive('envoyer')
             ->twice()
-            ->withArgs(fn (string $canal, string $code, object $destinataire, array $donnees): bool =>
-                $canal === 'in_app'
+            ->withArgs(fn (string $canal, string $code, object $destinataire, array $donnees): bool => $canal === 'in_app'
                 && $code === 'habilitation_modifiee'
                 && in_array($destinataire->id, [$directeur->id, $membre->id], true)
                 && $donnees['code'] === 'module.rh'
@@ -348,12 +347,12 @@ class SocleA9GroupesTest extends TestCase
 
         $this->get(ManageHabilitations::getUrl())
             ->assertSuccessful()
-            ->assertSee('Rôles du personnel')
+            ->assertSee('Habilitation du personnel')
             ->assertSee('Groupes');
 
         $this->get(ManageGroupePermissions::getUrl())
             ->assertSuccessful()
-            ->assertSee('Rôles du personnel')
+            ->assertSee('Habilitation du personnel')
             ->assertSee('Groupes');
     }
 }

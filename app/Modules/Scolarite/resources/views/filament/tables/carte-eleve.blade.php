@@ -4,7 +4,7 @@
     $photo = $record->photo
         ? \Illuminate\Support\Facades\Storage::disk('public')->url($record->photo)
         : null;
-    $statut = match ($record->statut) {
+    $statut = \App\Modules\Scolarite\Filament\Resources\EleveResource::estInscritAnneeActive($record) ? 'Inscrit' : match ($record->statut) {
         'prospect' => 'Prospect',
         'candidat' => 'Candidat',
         'admis' => 'Admis',
@@ -26,5 +26,5 @@
         :label="$record->matricule_permanent ?: 'Sans matricule'"
         :title="$titre"
         :badge="$statut"
-    >{{ $sexeLabel }} · Créé le {{ optional($record->created_at)->format('d/m/Y') }}</x-ambassadors-card>
+    >{{ $sexeLabel }}{{ $record->derniere_classe_frequente ? ' · Cl: '.$record->derniere_classe_frequente : '' }} · Créé le {{ optional($record->created_at)->format('d/m/Y') }}</x-ambassadors-card>
 </a>

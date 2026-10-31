@@ -53,6 +53,8 @@ class AvanceSalaireResource extends Resource
 
     public static function table(Table $table): Table
     {
+        AmbassadorsDesign::configureTable($table, null);
+
         return $table->columns([
             TextColumn::make('employe.nom_complet')->label('Personnel')->searchable(['nom', 'prenom']),
             TextColumn::make('montant')->money('XAF')->sortable(),
@@ -66,7 +68,7 @@ class AvanceSalaireResource extends Resource
                 'demande' => 'En attente', 'approuvee' => 'Approuvée', 'remboursee' => 'Remboursée', 'rejetee' => 'Rejetée',
             ]),
         ])->recordActions([
-            Action::make('valider')->label('Valider et décaisser')->icon('heroicon-o-banknotes')
+            AmbassadorsDesign::goldenFormModal(Action::make('valider'))->label('Valider et décaisser')->icon('heroicon-o-banknotes')
                 ->color(AmbassadorsDesign::VALIDATION_COLOR)
                 ->schema([Textarea::make('motif')->label('Motif de validation')->required()])
                 ->visible(fn (AvanceSalaire $record): bool => $record->statut === 'demande' && self::estFondateur())

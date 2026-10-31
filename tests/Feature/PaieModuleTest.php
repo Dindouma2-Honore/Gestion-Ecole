@@ -73,7 +73,7 @@ class PaieModuleTest extends TestCase
 
         // Mock PrimeServiceContract returning a 30 000 FCFA prime
         $this->mock(PrimeServiceContract::class, function ($mock) {
-            $mock->shouldReceive('getPrimesActives')
+            $mock->shouldReceive('getPrimesPourPeriode')
                 ->andReturn(collect([
                     (object) ['libelle' => 'Prime d’ancienneté', 'montant' => 30000.00],
                 ]));
@@ -81,8 +81,8 @@ class PaieModuleTest extends TestCase
 
         // Mock AbsenceServiceContract returning 2 days unjustified absence and 0 suspension days
         $this->mock(AbsenceServiceContract::class, function ($mock) use ($employe) {
-            $mock->shouldReceive('getJoursAbsenceNonJustifiee')
-                ->with($employe->id, 9, 2026)
+            $mock->shouldReceive('getJoursAbsenceNonJustifieePourPeriode')
+                ->with($employe->id, \Mockery::type(\Carbon\Carbon::class), \Mockery::type(\Carbon\Carbon::class))
                 ->andReturn(2);
             $mock->shouldReceive('getJoursSuspension')
                 ->with($employe->id, 9, 2026)
@@ -148,9 +148,9 @@ class PaieModuleTest extends TestCase
             'statut' => 'actif',
         ]);
 
-        $this->mock(PrimeServiceContract::class, fn ($mock) => $mock->shouldReceive('getPrimesActives')->andReturn(collect()));
+        $this->mock(PrimeServiceContract::class, fn ($mock) => $mock->shouldReceive('getPrimesPourPeriode')->andReturn(collect()));
         $this->mock(AbsenceServiceContract::class, function ($mock) {
-            $mock->shouldReceive('getJoursAbsenceNonJustifiee')->andReturn(0);
+            $mock->shouldReceive('getJoursAbsenceNonJustifieePourPeriode')->andReturn(0);
             $mock->shouldReceive('getJoursSuspension')->andReturn(0);
         });
 
@@ -180,9 +180,9 @@ class PaieModuleTest extends TestCase
             'statut' => 'actif',
         ]);
 
-        $this->mock(PrimeServiceContract::class, fn ($mock) => $mock->shouldReceive('getPrimesActives')->andReturn(collect()));
+        $this->mock(PrimeServiceContract::class, fn ($mock) => $mock->shouldReceive('getPrimesPourPeriode')->andReturn(collect()));
         $this->mock(AbsenceServiceContract::class, function ($mock) {
-            $mock->shouldReceive('getJoursAbsenceNonJustifiee')->andReturn(0);
+            $mock->shouldReceive('getJoursAbsenceNonJustifieePourPeriode')->andReturn(0);
             $mock->shouldReceive('getJoursSuspension')->andReturn(0);
         });
 
@@ -219,9 +219,9 @@ class PaieModuleTest extends TestCase
             'statut' => 'actif',
         ]);
 
-        $this->mock(PrimeServiceContract::class, fn ($mock) => $mock->shouldReceive('getPrimesActives')->andReturn(collect()));
+        $this->mock(PrimeServiceContract::class, fn ($mock) => $mock->shouldReceive('getPrimesPourPeriode')->andReturn(collect()));
         $this->mock(AbsenceServiceContract::class, function ($mock) {
-            $mock->shouldReceive('getJoursAbsenceNonJustifiee')->andReturn(0);
+            $mock->shouldReceive('getJoursAbsenceNonJustifieePourPeriode')->andReturn(0);
             $mock->shouldReceive('getJoursSuspension')->andReturn(0);
         });
 
@@ -262,9 +262,9 @@ class PaieModuleTest extends TestCase
             'statut' => 'actif',
         ]);
 
-        $this->mock(PrimeServiceContract::class, fn ($mock) => $mock->shouldReceive('getPrimesActives')->andReturn(collect()));
+        $this->mock(PrimeServiceContract::class, fn ($mock) => $mock->shouldReceive('getPrimesPourPeriode')->andReturn(collect()));
         $this->mock(AbsenceServiceContract::class, function ($mock) {
-            $mock->shouldReceive('getJoursAbsenceNonJustifiee')->andReturn(0);
+            $mock->shouldReceive('getJoursAbsenceNonJustifieePourPeriode')->andReturn(0);
             $mock->shouldReceive('getJoursSuspension')->andReturn(0);
         });
 

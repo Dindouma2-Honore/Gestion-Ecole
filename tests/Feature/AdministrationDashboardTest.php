@@ -33,7 +33,8 @@ class AdministrationDashboardTest extends TestCase
 
         $this->actingAs($user)
             ->get('/admin/socle')
-            ->assertRedirect('/admin/users');
+            ->assertSuccessful()
+            ->assertSee('Administration générale');
     }
 
     public function test_dashboard_renders_without_error_once_every_submodule_has_real_data(): void
@@ -82,10 +83,10 @@ class AdministrationDashboardTest extends TestCase
         );
 
         $this->assertNotNull($courrier->id);
-        $this->get('/admin/socle')->assertRedirect('/admin/users');
+        $this->get('/admin/socle')->assertSuccessful()->assertSee('Administration générale');
     }
 
-    public function test_administration_sidebar_exposes_only_the_six_governance_sections(): void
+    public function test_administration_sidebar_exposes_only_the_requested_governance_sections(): void
     {
         $user = User::factory()->create(['statut' => 'actif']);
         $user->assignRole('Fondateur');
@@ -94,13 +95,13 @@ class AdministrationDashboardTest extends TestCase
             ->get('/admin/users')
             ->assertSuccessful()
             ->assertSee('ADMINISTRATION')
-            ->assertSee('Utilisateurs &amp; habilitations', false)
-            ->assertSee('Structure de l’établissement')
-            ->assertSee('Années &amp; périodes', false)
-            ->assertSee('Modèles de documents')
-            ->assertSee('Workflows &amp; validations', false)
-            ->assertSee('Audit &amp; sécurité', false)
-            ->assertSee('Habilitations dynamiques')
+            ->assertSee('Tableau de bord')
+            ->assertSee('Utilisateurs')
+            ->assertSee('Habilitations')
+            ->assertSee('Paramètres')
+            ->assertSee('Audit')
+            ->assertDontSee('Modèles de documents')
+            ->assertDontSee('Workflows &amp; validations', false)
             ->assertDontSee('Permissions des groupes');
     }
 }

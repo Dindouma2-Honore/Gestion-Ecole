@@ -10,8 +10,8 @@ use App\Modules\Logistique\Models\CircuitTransport;
 use App\Modules\Logistique\Models\IncidentTransport;
 use App\Modules\Logistique\Models\InscriptionTransport;
 use App\Modules\Logistique\Models\PresenceTransport;
-use Illuminate\Support\Collection;
 use App\Modules\Socle\Contracts\AnneeScolaireServiceContract;
+use Illuminate\Support\Collection;
 
 class TransportService implements TransportServiceInterface
 {

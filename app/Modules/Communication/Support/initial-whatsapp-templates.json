@@ -1,0 +1,1040 @@
+[
+  {
+    "name": "parent inscription confirmee",
+    "code": "parent_inscription_confirmee",
+    "provider_template_name": "parent_inscription_confirmee",
+    "audience": "PARENT",
+    "module": "SCOLARITE",
+    "trigger_event": "parent_inscription_confirmee",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}},\n\nL’inscription de {{2}} en classe de {{3}} pour l’année scolaire {{4}} est confirmée.\nMatricule : {{5}}.\n\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Mme Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "student_name",
+        "example": "Paul Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "class_name",
+        "example": "6e A"
+      },
+      {
+        "component": "BODY",
+        "position": 4,
+        "key": "school_year",
+        "example": "2026-2027"
+      },
+      {
+        "component": "BODY",
+        "position": 5,
+        "key": "student_number",
+        "example": "AEC-TEST-00125"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "parent reinscription confirmee",
+    "code": "parent_reinscription_confirmee",
+    "provider_template_name": "parent_reinscription_confirmee",
+    "audience": "PARENT",
+    "module": "SCOLARITE",
+    "trigger_event": "parent_reinscription_confirmee",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, la réinscription de {{2}} pour {{3}} est confirmée. Merci.",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Mme Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "student_name",
+        "example": "Paul Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "school_year",
+        "example": "2026-2027"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "parent absence eleve",
+    "code": "parent_absence_eleve",
+    "provider_template_name": "parent_absence_eleve",
+    "audience": "PARENT",
+    "module": "ASSIDUITE",
+    "trigger_event": "parent_absence_eleve",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, une absence de {{2}} a été enregistrée le {{3}}. Merci de contacter la vie scolaire.",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Mme Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "student_name",
+        "example": "Paul Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "date",
+        "example": "14 septembre 2026"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "parent retard eleve",
+    "code": "parent_retard_eleve",
+    "provider_template_name": "parent_retard_eleve",
+    "audience": "PARENT",
+    "module": "ASSIDUITE",
+    "trigger_event": "parent_retard_eleve",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, un retard de {{2}} a été enregistré le {{3}}. Merci de contacter la vie scolaire si nécessaire.",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Mme Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "student_name",
+        "example": "Paul Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "date",
+        "example": "14 septembre 2026"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "parent bulletin disponible",
+    "code": "parent_bulletin_disponible",
+    "provider_template_name": "parent_bulletin_disponible",
+    "audience": "PARENT",
+    "module": "PEDAGOGIE",
+    "trigger_event": "parent_bulletin_disponible",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, le bulletin de {{2}} pour {{3}} est disponible auprès de l’établissement. Merci.",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Mme Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "student_name",
+        "example": "Paul Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "academic_period",
+        "example": "le premier trimestre"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "parent bulletin document",
+    "code": "parent_bulletin_document",
+    "provider_template_name": "parent_bulletin_document",
+    "audience": "PARENT",
+    "module": "PEDAGOGIE",
+    "trigger_event": "parent_bulletin_document",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "DOCUMENT",
+    "body": "Bonjour {{1}},\n\nVeuillez trouver ci-joint le bulletin scolaire de {{2}} pour {{3}}.\nClasse : {{4}}.\n\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Mme Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "student_name",
+        "example": "Paul Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "academic_period",
+        "example": "le premier trimestre"
+      },
+      {
+        "component": "BODY",
+        "position": 4,
+        "key": "class_name",
+        "example": "6e A"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "parent paiement confirme",
+    "code": "parent_paiement_confirme",
+    "provider_template_name": "parent_paiement_confirme",
+    "audience": "PARENT",
+    "module": "FINANCES",
+    "trigger_event": "parent_paiement_confirme",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, votre paiement de {{2}} pour {{3}} a été enregistré. Référence : {{4}}. Merci.",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Mme Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "amount",
+        "example": "25 000 FCFA"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "student_name",
+        "example": "Paul Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 4,
+        "key": "receipt_number",
+        "example": "RECU-TEST-001"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "parent echeance paiement",
+    "code": "parent_echeance_paiement",
+    "provider_template_name": "parent_echeance_paiement",
+    "audience": "PARENT",
+    "module": "FINANCES",
+    "trigger_event": "parent_echeance_paiement",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, l’échéance de {{2}} pour {{3}} est prévue le {{4}}. Merci.",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Mme Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "amount",
+        "example": "25 000 FCFA"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "student_name",
+        "example": "Paul Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 4,
+        "key": "due_date",
+        "example": "30 septembre 2026"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "parent infirmerie",
+    "code": "parent_infirmerie",
+    "provider_template_name": "parent_infirmerie",
+    "audience": "PARENT",
+    "module": "VIE_SCOLAIRE",
+    "trigger_event": "parent_infirmerie",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, {{2}} a été accueilli à l’infirmerie. Merci de contacter l’établissement pour les informations de suivi.",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Mme Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "student_name",
+        "example": "Paul Mbarga"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "parent urgence medicale",
+    "code": "parent_urgence_medicale",
+    "provider_template_name": "parent_urgence_medicale",
+    "audience": "PARENT",
+    "module": "VIE_SCOLAIRE",
+    "trigger_event": "parent_urgence_medicale",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, veuillez contacter immédiatement l’établissement concernant {{2}}. Une prise en charge urgente est en cours.",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Mme Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "student_name",
+        "example": "Paul Mbarga"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "parent sortie exceptionnelle",
+    "code": "parent_sortie_exceptionnelle",
+    "provider_template_name": "parent_sortie_exceptionnelle",
+    "audience": "PARENT",
+    "module": "VIE_SCOLAIRE",
+    "trigger_event": "parent_sortie_exceptionnelle",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, la sortie exceptionnelle de {{2}} est prévue le {{3}}. Merci de contacter la vie scolaire pour confirmation.",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Mme Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "student_name",
+        "example": "Paul Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "date",
+        "example": "14 septembre 2026"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "parent autorisation evenement",
+    "code": "parent_autorisation_evenement",
+    "provider_template_name": "parent_autorisation_evenement",
+    "audience": "PARENT",
+    "module": "VIE_SCOLAIRE",
+    "trigger_event": "parent_autorisation_evenement",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, votre autorisation est nécessaire pour la participation de {{2}} à {{3}}. Merci de contacter l’établissement.",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Mme Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "student_name",
+        "example": "Paul Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "event_name",
+        "example": "la visite pédagogique"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "parent evenement scolaire",
+    "code": "parent_evenement_scolaire",
+    "provider_template_name": "parent_evenement_scolaire",
+    "audience": "PARENT",
+    "module": "VIE_SCOLAIRE",
+    "trigger_event": "parent_evenement_scolaire",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, rappel de l’événement {{2}} prévu le {{3}} auquel votre famille est inscrite. Merci.",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Mme Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "event_name",
+        "example": "la réunion des parents"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "date",
+        "example": "18 septembre 2026"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "parent rendez vous",
+    "code": "parent_rendez_vous",
+    "provider_template_name": "parent_rendez_vous",
+    "audience": "PARENT",
+    "module": "COMMUNICATION",
+    "trigger_event": "parent_rendez_vous",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, votre rendez-vous avec {{2}} est confirmé pour {{3}}. Merci.",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "parent_name",
+        "example": "Mme Mbarga"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "staff_name",
+        "example": "la direction"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "date",
+        "example": "18 septembre 2026 à 10 h"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "teacher schedule changed",
+    "code": "teacher_schedule_changed",
+    "provider_template_name": "teacher_schedule_changed",
+    "audience": "TEACHER",
+    "module": "PEDAGOGIE",
+    "trigger_event": "teacher_schedule_changed",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Votre emploi du temps a été modifié. Consultez votre espace enseignant.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Dominique Exemple"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "teacher missing attendance",
+    "code": "teacher_missing_attendance",
+    "provider_template_name": "teacher_missing_attendance",
+    "audience": "TEACHER",
+    "module": "ASSIDUITE",
+    "trigger_event": "teacher_missing_attendance",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Un appel de présence reste à saisir dans votre espace enseignant.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Dominique Exemple"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "teacher missing progress",
+    "code": "teacher_missing_progress",
+    "provider_template_name": "teacher_missing_progress",
+    "audience": "TEACHER",
+    "module": "PEDAGOGIE",
+    "trigger_event": "teacher_missing_progress",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Une progression pédagogique reste à mettre à jour dans votre espace enseignant.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Dominique Exemple"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "teacher missing grades",
+    "code": "teacher_missing_grades",
+    "provider_template_name": "teacher_missing_grades",
+    "audience": "TEACHER",
+    "module": "PEDAGOGIE",
+    "trigger_event": "teacher_missing_grades",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Des notes restent à saisir dans votre espace enseignant.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Dominique Exemple"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "teacher replacement assignment",
+    "code": "teacher_replacement_assignment",
+    "provider_template_name": "teacher_replacement_assignment",
+    "audience": "TEACHER",
+    "module": "PEDAGOGIE",
+    "trigger_event": "teacher_replacement_assignment",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Un remplacement vous a été affecté. Consultez votre espace enseignant.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Dominique Exemple"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "staff leave approved",
+    "code": "staff_leave_approved",
+    "provider_template_name": "staff_leave_approved",
+    "audience": "STAFF",
+    "module": "RH",
+    "trigger_event": "staff_leave_approved",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Votre demande de congé a été approuvée.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Dominique Exemple"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "staff leave rejected",
+    "code": "staff_leave_rejected",
+    "provider_template_name": "staff_leave_rejected",
+    "audience": "STAFF",
+    "module": "RH",
+    "trigger_event": "staff_leave_rejected",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Votre demande de congé a été refusée. Consultez votre espace personnel pour le motif.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Dominique Exemple"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "staff mission assigned",
+    "code": "staff_mission_assigned",
+    "provider_template_name": "staff_mission_assigned",
+    "audience": "STAFF",
+    "module": "RH",
+    "trigger_event": "staff_mission_assigned",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Une mission vous a été affectée. Consultez votre espace personnel.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Dominique Exemple"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "staff permission approved",
+    "code": "staff_permission_approved",
+    "provider_template_name": "staff_permission_approved",
+    "audience": "STAFF",
+    "module": "RH",
+    "trigger_event": "staff_permission_approved",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Votre demande de permission a été approuvée.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Dominique Exemple"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "admin enrollment pending",
+    "code": "admin_enrollment_pending",
+    "provider_template_name": "admin_enrollment_pending",
+    "audience": "ADMINISTRATION",
+    "module": "SCOLARITE",
+    "trigger_event": "admin_enrollment_pending",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Une inscription attend votre validation.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Dominique Exemple"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "admin critical incident",
+    "code": "admin_critical_incident",
+    "provider_template_name": "admin_critical_incident",
+    "audience": "ADMINISTRATION",
+    "module": "VIE_SCOLAIRE",
+    "trigger_event": "admin_critical_incident",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Un incident critique nécessite votre intervention.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Dominique Exemple"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "admin overdue complaint",
+    "code": "admin_overdue_complaint",
+    "provider_template_name": "admin_overdue_complaint",
+    "audience": "ADMINISTRATION",
+    "module": "VIE_SCOLAIRE",
+    "trigger_event": "admin_overdue_complaint",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Une réclamation a dépassé son délai de traitement.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Dominique Exemple"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "admin missing attendance calls",
+    "code": "admin_missing_attendance_calls",
+    "provider_template_name": "admin_missing_attendance_calls",
+    "audience": "ADMINISTRATION",
+    "module": "ASSIDUITE",
+    "trigger_event": "admin_missing_attendance_calls",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Des appels de présence restent à saisir.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Dominique Exemple"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "admin attendance anomaly",
+    "code": "admin_attendance_anomaly",
+    "provider_template_name": "admin_attendance_anomaly",
+    "audience": "ADMINISTRATION",
+    "module": "ASSIDUITE",
+    "trigger_event": "admin_attendance_anomaly",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Une anomalie de présence nécessite une vérification.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Dominique Exemple"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "technical backup failed",
+    "code": "technical_backup_failed",
+    "provider_template_name": "technical_backup_failed",
+    "audience": "TECHNICAL",
+    "module": "TECHNIQUE",
+    "trigger_event": "technical_backup_failed",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Une sauvegarde a échoué. Consultez la supervision technique.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Dominique Exemple"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "technical replication lag",
+    "code": "technical_replication_lag",
+    "provider_template_name": "technical_replication_lag",
+    "audience": "TECHNICAL",
+    "module": "TECHNIQUE",
+    "trigger_event": "technical_replication_lag",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Un retard de réplication a été détecté. Consultez la supervision technique.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Dominique Exemple"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "technical storage warning",
+    "code": "technical_storage_warning",
+    "provider_template_name": "technical_storage_warning",
+    "audience": "TECHNICAL",
+    "module": "TECHNIQUE",
+    "trigger_event": "technical_storage_warning",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Le seuil de stockage a été atteint. Consultez la supervision technique.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Dominique Exemple"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "technical job failed",
+    "code": "technical_job_failed",
+    "provider_template_name": "technical_job_failed",
+    "audience": "TECHNICAL",
+    "module": "TECHNIQUE",
+    "trigger_event": "technical_job_failed",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Un traitement automatique a échoué. Consultez la supervision technique.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Dominique Exemple"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "technical service unavailable",
+    "code": "technical_service_unavailable",
+    "provider_template_name": "technical_service_unavailable",
+    "audience": "TECHNICAL",
+    "module": "TECHNIQUE",
+    "trigger_event": "technical_service_unavailable",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}}, Un service est indisponible. Consultez la supervision technique.\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Dominique Exemple"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "candidate application accepted",
+    "code": "candidate_application_accepted",
+    "provider_template_name": "candidate_application_accepted",
+    "audience": "CANDIDATE",
+    "module": "RH",
+    "trigger_event": "candidate_application_accepted",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}},\n\nNous avons le plaisir de vous informer que votre candidature au poste de {{2}} a été retenue par Ambassadors Educational Complex.\n\nNotre équipe vous contactera pour la suite du processus de recrutement.\n\nMerci pour l'intérêt porté à notre établissement.\n\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "candidate_name",
+        "example": "Marie Dupont"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "job_title",
+        "example": "Directeur administratif"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "candidate application rejected",
+    "code": "candidate_application_rejected",
+    "provider_template_name": "candidate_application_rejected",
+    "audience": "CANDIDATE",
+    "module": "RH",
+    "trigger_event": "candidate_application_rejected",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}},\n\nNous vous remercions pour votre candidature au poste de {{2}}.\n\nAprès étude de votre dossier, votre candidature n'a pas été retenue pour cette opportunité.\n\nNous vous remercions pour l'intérêt porté à Ambassadors Educational Complex.\n\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "candidate_name",
+        "example": "Marie Dupont"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "job_title",
+        "example": "Directeur administratif"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  },
+  {
+    "name": "staff account created",
+    "code": "staff_account_created",
+    "provider_template_name": "staff_account_created",
+    "audience": "STAFF",
+    "module": "RH",
+    "trigger_event": "staff_account_created",
+    "language": "fr",
+    "provider_category": "UTILITY",
+    "header_type": "NONE",
+    "body": "Bonjour {{1}},\n\nVotre intégration au sein de Ambassadors Educational Complex a été enregistrée avec succès.\n\nFonction : {{2}}\n\nVotre compte d'accès à la plateforme a été créé.\n\nIdentifiant : {{3}}\n\nPour sécuriser votre compte, utilisez le lien/code d'activation qui vous a été transmis afin de définir votre mot de passe.\n\nBienvenue au sein de l'établissement.\n\nAmbassadors Educational Complex",
+    "variables_schema": [
+      {
+        "component": "BODY",
+        "position": 1,
+        "key": "recipient_name",
+        "example": "Marie Dupont"
+      },
+      {
+        "component": "BODY",
+        "position": 2,
+        "key": "job_title",
+        "example": "Enseignante"
+      },
+      {
+        "component": "BODY",
+        "position": 3,
+        "key": "login",
+        "example": "marie.dupont@ambassadors.test"
+      }
+    ],
+    "buttons": [],
+    "local_status": "DRAFT",
+    "meta_status": "NOT_SUBMITTED"
+  }
+]

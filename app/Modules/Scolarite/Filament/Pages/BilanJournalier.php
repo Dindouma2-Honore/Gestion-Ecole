@@ -19,6 +19,8 @@ class BilanJournalier extends Page
 
     protected static ?string $navigationLabel = 'Bilan journalier';
 
+    protected static ?int $navigationSort = 11;
+
     protected static ?string $title = 'Bilan journalier de la scolarité';
 
     protected static ?string $slug = 'scolarite/bilan-journalier';

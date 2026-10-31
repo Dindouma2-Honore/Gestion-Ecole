@@ -11,10 +11,10 @@ class Visiteur extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'nom', 'telephone', 'photo_path', 'motif',
+        'nom', 'prenom', 'telephone', 'photo_path', 'type_piece', 'numero_piece', 'motif',
         'personne_visitee_type', 'personne_visitee_id',
-        'heure_entree', 'heure_sortie', 'badge_numero',
-        'autorisation_prealable', 'incident_signale', 'enregistre_par',
+        'service_concerne', 'heure_entree', 'heure_sortie', 'badge_numero', 'badge_rendu',
+        'autorisation_prealable', 'incident_signale', 'observations', 'observation_sortie', 'enregistre_par',
     ];
 
     protected $casts = [
@@ -22,5 +22,6 @@ class Visiteur extends Model
         'heure_sortie' => 'datetime',
         'autorisation_prealable' => 'boolean',
         'incident_signale' => 'boolean',
+        'badge_rendu' => 'boolean',
     ];
 }

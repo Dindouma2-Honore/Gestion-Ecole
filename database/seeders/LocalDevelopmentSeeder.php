@@ -4,17 +4,22 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Models\User;
 use App\Modules\Finances\Models\CatalogueFraisDivers;
 use App\Modules\Finances\Models\ConfigurationFraisClasse;
 use App\Modules\Finances\Models\GroupeFrais;
 use App\Modules\Finances\Models\TypeFraisRecurrent;
+use App\Modules\RH\Models\Employe;
 use App\Modules\Scolarite\Models\Classe;
+use App\Modules\Scolarite\Models\Cycle;
+use App\Modules\Scolarite\Models\Niveau;
+use App\Modules\Scolarite\Models\ParentTuteur;
+use App\Modules\Scolarite\Models\SectionScolaire;
 use App\Modules\Socle\Models\AnneeScolaire;
-use App\Modules\Socle\Models\Cycle;
-use App\Modules\Socle\Models\Niveau;
-use App\Modules\Socle\Models\SectionScolaire;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class LocalDevelopmentSeeder extends Seeder
 {
@@ -120,6 +125,49 @@ class LocalDevelopmentSeeder extends Seeder
                         'montant_defaut' => $montant, 'actif' => true],
                 );
             }
+
+            // Profil de démonstration John Ndah (Parent et Personnel / Fondateur)
+            $fondateurRole = Role::firstOrCreate(['name' => 'Fondateur']);
+            $parentRole = Role::firstOrCreate(['name' => 'Parent']);
+
+            $johnUser = User::query()->updateOrCreate(
+                ['email' => 'john.ndah@ambassadors.local'],
+                [
+                    'name' => 'John Ndah',
+                    'nom' => 'Ndah',
+                    'prenom' => 'John',
+                    'telephone' => '679688792',
+                    'password' => Hash::make('password'),
+                    'statut' => 'actif',
+                    'must_change_password' => false,
+                ]
+            );
+            $johnUser->syncRoles([$fondateurRole, $parentRole]);
+
+            Employe::query()->updateOrCreate(
+                ['matricule' => 'EMP-NDAH-001'],
+                [
+                    'user_id' => $johnUser->id,
+                    'nom' => 'Ndah',
+                    'prenom' => 'John',
+                    'telephone' => '679688792',
+                    'email' => 'john.ndah@ambassadors.local',
+                    'poste' => 'Direction / Fondateur',
+                    'date_embauche' => '2026-09-01',
+                    'statut' => 'actif',
+                ]
+            );
+
+            ParentTuteur::query()->updateOrCreate(
+                ['telephone' => '679688792'],
+                [
+                    'nom' => 'Ndah',
+                    'prenom' => 'John',
+                    'email' => 'john.ndah@ambassadors.local',
+                    'profession' => 'Dirigeant',
+                    'portail_actif' => true,
+                ]
+            );
         });
 
         $this->command?->info('Données locales Ambassadors créées ou actualisées.');

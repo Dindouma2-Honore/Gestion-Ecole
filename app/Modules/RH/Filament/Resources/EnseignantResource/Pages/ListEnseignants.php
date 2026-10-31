@@ -6,7 +6,7 @@ namespace App\Modules\RH\Filament\Resources\EnseignantResource\Pages;
 
 use App\Filament\Concerns\HasCardListLayout;
 use App\Modules\RH\Filament\Resources\EnseignantResource;
-use Filament\Actions;
+use App\Modules\RH\Filament\Support\RhActions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListEnseignants extends ListRecords
@@ -19,7 +19,7 @@ class ListEnseignants extends ListRecords
     {
         return [
             $this->cardLayoutAction(),
-            Actions\CreateAction::make(),
+            RhActions::create(),
         ];
     }
 }

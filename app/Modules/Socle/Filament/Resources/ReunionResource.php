@@ -72,7 +72,7 @@ class ReunionResource extends Resource
                 TextColumn::make('type')->badge()->color('info'),
                 TextColumn::make('date_heure')->dateTime()->sortable(),
                 TextColumn::make('lieu'),
-                TextColumn::make('niveau.nom')->label('Niveau'),
+                TextColumn::make('niveau_label')->state(fn ($record) => $record->niveau?->name)->label('Niveau'),
                 TextColumn::make('statut')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {

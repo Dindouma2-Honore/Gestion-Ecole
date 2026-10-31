@@ -88,3 +88,16 @@ réinventer une couleur dans chaque Resource.
 - Les vues doivent rester utilisables à 360 px de largeur.
 - Conserver les composants Filament pour le clavier, les erreurs et les
   lecteurs d’écran; le thème personnalise leur apparence, pas leur logique.
+
+## Cadre commun des modules
+
+Les neuf tableaux de bord métier reprennent désormais le cadre de l’Administration : bandeau institutionnel, date, indicateurs propres au module et cartes d’accès rapides. Les filtres, alertes et actions métier restent dans leurs vues d’origine.
+
+- `ModuleExperience` identifie le module à partir des scopes Filament, fournit l’aide contextuelle et les raccourcis autorisés.
+- `ModuleNavigation::forModule()` conserve les rubriques métier et ajoute le tableau de bord ainsi que le groupe « Autres modules ». Les liens sont filtrés avec les droits de la page ou de la Resource cible.
+- Les hooks `PAGE_START` et `PAGE_END` du panel affichent les composants communs, sans remplacer les traitements des tableaux de bord.
+- `module-dashboard-hero`, `module-dashboard-shortcuts` et `x-module-stat` réutilisent les styles de l’Administration. Les widgets Filament restent natifs.
+- La Scolarité ouvre son tableau de bord pour les profils ayant accès au module complet ; les accès limités aux inscriptions conservent leur destination dédiée.
+- La barre supérieure fournit le retour aux modules et le lien du module courant. La navigation métier reste dans la barre latérale.
+
+Pour ajouter une rubrique, conserver une responsabilité précise, vérifier ses droits d’accès et compléter son aide dans `ModuleExperience`. Ne pas ajouter de compteurs fictifs ni remplacer un parcours métier par une action générique de modale qui contournerait ses validations.

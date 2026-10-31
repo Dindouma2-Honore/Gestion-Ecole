@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Finances\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Models\User;
 use App\Modules\Finances\Filament\Resources\MouvementDiversResource\Pages;
 use App\Modules\Finances\Models\MouvementCaisse;
@@ -57,13 +58,13 @@ class MouvementDiversResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table->columns([
+        return RecordModal::configure($table->columns([
             TextColumn::make('created_at')->label(__('finance_misc.date'))->dateTime('d/m/Y H:i')->sortable(),
             TextColumn::make('type')->label(__('finance_misc.type'))->badge()->formatStateUsing(fn (string $state): string => $state === 'encaissement' ? __('finance_misc.income') : __('finance_misc.expense'))->color(fn (string $state): string => $state === 'encaissement' ? 'success' : 'danger'),
             TextColumn::make('montant')->label(__('finance_misc.amount'))->money('XAF')->sortable(),
             TextColumn::make('justificatif')->label(__('finance_misc.reason'))->wrap()->searchable(),
             TextColumn::make('session.date_session')->label(__('finance_misc.cash_session'))->date('d/m/Y'),
-        ])->filters([SelectFilter::make('type')->options(['encaissement' => __('finance_misc.income'), 'decaissement' => __('finance_misc.expense')])])->defaultSort('created_at', 'desc');
+        ])->filters([SelectFilter::make('type')->options(['encaissement' => __('finance_misc.income'), 'decaissement' => __('finance_misc.expense')])])->defaultSort('created_at', 'desc'), static::class);
     }
 
     public static function getEloquentQuery(): Builder

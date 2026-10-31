@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Socle\Filament\Resources;
 
 use App\Models\User;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
@@ -31,8 +33,7 @@ class RoleResource extends Resource
         /** @var User|null $user */
         $user = Auth::user();
 
-        return $user?->hasAnyRole(['Fondateur', 'Admin', 'Administrateur', 'Super Admin']) === true
-            || $user?->can('gerer_roles') === true;
+        return $user?->hasAnyRole(['Fondateur', 'Admin', 'Administrateur', 'Super Admin']) === true;
     }
 
     public static function canCreate(): bool
@@ -86,7 +87,15 @@ class RoleResource extends Resource
                 TextColumn::make('guard_name')->label('Guard'),
                 TextColumn::make('permissions.name')->label('Permissions')->badge()->color('info'),
                 TextColumn::make('created_at')->dateTime()->sortable(),
-            ]);
+            ])
+            ->actions([
+                EditAction::make()
+                    ->successNotification(fn (Role $record): Notification => Notification::make()
+                        ->color('gray')
+                        ->title('Rôle mis à jour')
+                        ->body('Le rôle « '.$record->name.' » a été mis à jour avec succès.')),
+            ])
+            ->defaultSort('created_at', 'desc');
     }
 
     public static function getPages(): array

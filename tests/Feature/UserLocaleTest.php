@@ -24,14 +24,16 @@ class UserLocaleTest extends TestCase
         $english = User::factory()->create(['statut' => 'actif', 'locale' => 'en']);
         $english->assignRole('Fondateur');
         $this->actingAs($english)->get('/admin/users')->assertSuccessful()
-            ->assertSee('Users &amp; permissions', false)
-            ->assertSee('Institution structure');
+            ->assertSee('Users')
+            ->assertSee('Permissions')
+            ->assertSee('Settings');
 
         $french = User::factory()->create(['statut' => 'actif', 'locale' => 'fr']);
         $french->assignRole('Fondateur');
         $this->actingAs($french)->get('/admin/users')->assertSuccessful()
-            ->assertSee('Utilisateurs &amp; habilitations', false)
-            ->assertSee('Structure de l’établissement');
+            ->assertSee('Utilisateurs')
+            ->assertSee('Habilitations')
+            ->assertSee('Paramètres');
     }
 
     public function test_module_portal_is_translated_for_an_english_user(): void

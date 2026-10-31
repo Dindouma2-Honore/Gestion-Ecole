@@ -19,6 +19,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class WorkflowDefinitionResource extends Resource
 {
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $model = WorkflowDefinition::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-arrows-right-left';

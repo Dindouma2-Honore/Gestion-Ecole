@@ -21,15 +21,15 @@ class MaintenanceService implements MaintenanceServiceInterface
     ) {}
 
     public function signalerPanne(int $equipementId, string $description): object
-{
-    return DemandeIntervention::create([
-        'equipement_id' => $equipementId,
-        'description' => $description,
-        'type' => 'curative',
-        'statut' => 'signalee',
-        'date_signalement' => now(),
-    ]);
-}
+    {
+        return DemandeIntervention::create([
+            'equipement_id' => $equipementId,
+            'description' => $description,
+            'type' => 'curative',
+            'statut' => 'signalee',
+            'date_signalement' => now(),
+        ]);
+    }
 
     public function diagnostiquer(int $demandeId, string $diagnostic, float $coutEstime): void
     {
@@ -83,7 +83,7 @@ class MaintenanceService implements MaintenanceServiceInterface
 
     public function getMaintenancesDues(): Collection
     {
-        return PlanMaintenancePreventive::where('prochaine_echeance', '<=', now())->get();
+        return PlanMaintenancePreventive::where('actif', true)->where('prochaine_echeance', '<=', now())->get();
     }
 
     // Job planifié (à créer séparément dans app/Console) :

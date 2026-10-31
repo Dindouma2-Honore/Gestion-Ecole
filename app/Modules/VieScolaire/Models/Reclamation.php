@@ -16,14 +16,16 @@ class Reclamation extends Model implements HasWorkflow
     public $timestamps = false;
 
     protected $fillable = [
-        'type', 'categorie', 'description', 'priorite',
-        'signale_par_type', 'signale_par_id', 'responsable_id',
+        'reference', 'type', 'categorie', 'description', 'priorite',
+        'signale_par_type', 'signale_par_id', 'canal', 'sujet', 'responsable_id',
         'delai_reponse', 'statut', 'reponse', 'tache_id', 'created_at',
     ];
-     protected $casts = [
-    'delai_reponse' => 'date',
-    'created_at' => 'datetime',
+
+    protected $casts = [
+        'delai_reponse' => 'date',
+        'created_at' => 'datetime',
     ];
+
     public function historiqueStatuts(): HasMany
     {
         return $this->hasMany(ReclamationHistoriqueStatut::class);

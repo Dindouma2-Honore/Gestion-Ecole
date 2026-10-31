@@ -17,4 +17,9 @@ class DiplomePersonnel extends Model
     {
         return $this->belongsTo(Employe::class, 'personnel_id');
     }
+
+    public function employe(): BelongsTo
+    {
+        return $this->belongsTo(Employe::class, 'personnel_id');
+    }
 }

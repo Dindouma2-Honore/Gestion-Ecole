@@ -1,4 +1,3 @@
-
 <?php
 
 
@@ -16,6 +15,7 @@ use App\Providers\Filament\JoelPanelProvider;
 use App\Modules\Communication\Providers\CommunicationServiceProvider;
 
 return [
+    \App\Modules\Technique\Providers\TechniqueServiceProvider::class,
     AppServiceProvider::class,
     AdminPanelProvider::class,
     JoelPanelProvider::class,

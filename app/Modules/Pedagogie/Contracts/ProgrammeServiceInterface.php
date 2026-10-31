@@ -28,8 +28,30 @@ interface ProgrammeServiceInterface
         int $classeId,
         int $anneeScolaireId,
         UploadedFile $fichierSource,
-        array $chapitres
+        array $chapitres,
+        ?int $offrePedagogiqueId = null,
     ): object;
+
+    /**
+     * Importe un document de programme (PDF/Word), l'enregistre et déclenche l'analyse asynchrone.
+     */
+    public function importerProgrammeDocument(
+        int $enseignantId,
+        int $offrePedagogiqueId,
+        UploadedFile $fichier,
+    ): object;
+
+    /**
+     * Permet à l'enseignant de valider ou corriger la structure extraite par l'analyse automatique.
+     */
+    public function validerParEnseignant(int $programmeId, array $elementsModifies = []): object;
+
+    /**
+     * Crée une nouvelle version incrémentale (V2, V3...) d'un programme existant sans altérer l'historique.
+     */
+    public function creerNouvelleVersion(int $programmeId): object;
+
+    public function archiverProgramme(int $programmeId): void;
 
     public function importerChapitresDepuisExcel(UploadedFile $fichierExcel): array;
 
@@ -38,4 +60,23 @@ interface ProgrammeServiceInterface
     public function rejeterProgramme(int $programmeId, string $motif): void;
 
     public function getChapitresPrevus(int $matiereId, int $classeId, int $anneeScolaireId, ?int $enseignantId = null): Collection;
+
+    public function ajouterLecon(int $chapitreId, string $titre, ?string $objectifs = null, float $dureeHeures = 1.0, int $ordre = 1): object;
+
+    public function getLeconsChapitre(int $chapitreId): Collection;
+
+    /**
+     * Déclenche l'analyse intelligente (IA) d'un programme existant.
+     */
+    public function lancerAnalyseIntelligente(int $programmeId, ?int $userId = null): object;
+
+    /**
+     * Récupère le programme et propose automatiquement le prochain chapitre et la prochaine leçon à traiter.
+     */
+    public function getProchaineNotionAEffectuer(
+        int $matiereId,
+        int $classeId,
+        int $anneeScolaireId,
+        ?int $enseignantId = null
+    ): array;
 }

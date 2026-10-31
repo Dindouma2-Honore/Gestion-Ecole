@@ -10,7 +10,6 @@ use App\Modules\Assiduite\Models\DossierSante;
 use App\Modules\Assiduite\Models\VisiteInfirmerie;
 use App\Modules\Socle\Contracts\AuditServiceContract;
 use App\Modules\Socle\Contracts\NotificationServiceContract;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -32,7 +31,7 @@ class SanteService implements SanteServiceContract
     public function consulterDossier(int $eleveId): object
     {
         $dossier = DossierSante::where('eleve_id', $eleveId)->first();
-        if (!$dossier) {
+        if (! $dossier) {
             throw new DossierSanteInexistantException($eleveId);
         }
 
@@ -60,7 +59,7 @@ class SanteService implements SanteServiceContract
             if ($eleveData && $this->notification) {
                 $this->notification->envoyer(
                     canal: 'whatsapp',
-                    code: 'visite_infirmerie_' . $gravite,
+                    code: 'visite_infirmerie_'.$gravite,
                     eleveId: $eleveId,
                     donnees: ['eleve' => $eleveData->nom ?? '', 'motif' => $motif]
                 );
@@ -75,14 +74,14 @@ class SanteService implements SanteServiceContract
     {
         $dossier = DossierSante::where('eleve_id', $eleveId)->first();
 
-        if (!$dossier) {
+        if (! $dossier) {
             return (object) ['groupe_sanguin' => null, 'allergies' => null, 'contact_urgence' => null];
         }
 
         return (object) [
             'groupe_sanguin' => $dossier->groupe_sanguin,
             'allergies' => $dossier->allergies,
-            'contact_urgence' => $dossier->contact_urgence_nom . ' — ' . $dossier->contact_urgence_telephone,
+            'contact_urgence' => $dossier->contact_urgence_nom.' — '.$dossier->contact_urgence_telephone,
         ];
     }
 }

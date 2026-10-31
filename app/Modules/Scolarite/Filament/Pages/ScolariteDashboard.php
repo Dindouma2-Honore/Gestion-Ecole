@@ -14,11 +14,12 @@ use App\Modules\Scolarite\Filament\Resources\GrilleTarifaireResource;
 use App\Modules\Scolarite\Filament\Resources\InscriptionResource;
 use App\Modules\Scolarite\Filament\Resources\PaiementResource;
 use App\Modules\Scolarite\Filament\Resources\ParentTuteurResource;
+use App\Modules\Scolarite\Filament\Widgets\ScolariteOverview;
 use Filament\Pages\Page;
 
 class ScolariteDashboard extends Page
 {
-    protected static bool $shouldRegisterNavigation = false;
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $slug = 'scolarite';
 
@@ -30,15 +31,18 @@ class ScolariteDashboard extends Page
 
     protected static ?string $title = 'Scolarité';
 
-    protected string $view = 'filament.pages.module-placeholder';
+    protected string $view = 'filament.pages.module-dashboard';
 
     public function mount(): void
     {
-        $destination = ModuleAccess::canAccessModule(auth()->user(), 'Scolarite')
-            ? EleveResource::getUrl()
-            : InscriptionResource::getUrl();
+        if (! ModuleAccess::canAccessModule(auth()->user(), 'Scolarite')) {
+            $this->redirect(InscriptionResource::getUrl(), navigate: true);
+        }
+    }
 
-        $this->redirect($destination, navigate: true);
+    protected function getHeaderWidgets(): array
+    {
+        return [ScolariteOverview::class];
     }
 
     public function getModuleIcon(): string

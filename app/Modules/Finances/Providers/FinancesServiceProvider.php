@@ -7,6 +7,7 @@ namespace App\Modules\Finances\Providers;
 use App\Modules\Finances\Console\Commands\RelancerRecouvrement;
 use App\Modules\Finances\Contracts\BalanceDepenseProviderContract;
 use App\Modules\Finances\Contracts\BalanceServiceContract;
+use App\Modules\Finances\Contracts\BilanFinancierClasseServiceContract;
 use App\Modules\Finances\Contracts\BudgetServiceContract;
 use App\Modules\Finances\Contracts\CaisseServiceContract;
 use App\Modules\Finances\Contracts\ConfigurationFraisClasseServiceContract;
@@ -18,6 +19,7 @@ use App\Modules\Finances\Contracts\PaiementServiceContract;
 use App\Modules\Finances\Contracts\RecouvrementServiceContract;
 use App\Modules\Finances\Contracts\RepartitionPaiementServiceContract;
 use App\Modules\Finances\Services\BalanceService;
+use App\Modules\Finances\Services\BilanFinancierClasseService;
 use App\Modules\Finances\Services\BilanJournalierScolariteService;
 use App\Modules\Finances\Services\BudgetService;
 use App\Modules\Finances\Services\CaisseService;
@@ -41,6 +43,7 @@ class FinancesServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(BalanceServiceContract::class, BalanceService::class);
+        $this->app->bind(BilanFinancierClasseServiceContract::class, BilanFinancierClasseService::class);
         $this->app->bind(BilanJournalierScolariteContract::class, BilanJournalierScolariteService::class);
         $this->app->bind(BudgetServiceContract::class, BudgetService::class);
         $this->app->bind(DepenseServiceContract::class, DepenseService::class);

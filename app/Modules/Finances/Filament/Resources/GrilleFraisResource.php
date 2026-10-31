@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Finances\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Modules\Finances\Models\GrilleFrais;
 use App\Modules\Finances\Models\TypeFraisRecurrent;
+use App\Modules\Scolarite\Contracts\AcademicStructureCatalogContract;
+use App\Modules\Scolarite\Contracts\AcademicStructureReadContract;
 use App\Modules\Socle\Contracts\AnneeScolaireServiceContract;
-use App\Modules\Socle\Contracts\ParametrageServiceContract;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
@@ -24,7 +26,7 @@ class GrilleFraisResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-currency-dollar';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Finances';
+    protected static string|\UnitEnum|null $navigationGroup = 'Scolarité';
 
     protected static ?string $modelLabel = 'Grille de frais';
 
@@ -36,8 +38,8 @@ class GrilleFraisResource extends Resource
             ->components([
                 Select::make('niveau_id')
                     ->label('Niveau')
-                    ->options(fn (): array => collect(app(ParametrageServiceContract::class)->getTousLesNiveaux())
-                        ->pluck('nom', 'id')
+                    ->options(fn (): array => collect(app(AcademicStructureCatalogContract::class)->niveaux())
+                        ->pluck('name', 'id')
                         ->all())
                     ->required(),
                 Select::make('annee_scolaire_id')
@@ -62,11 +64,11 @@ class GrilleFraisResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordModal::configure($table
             ->columns([
                 TextColumn::make('niveau_id')
                     ->label('Niveau')
-                    ->formatStateUsing(fn (int $state): string => app(ParametrageServiceContract::class)->getNiveau($state)?->nom ?? "#{$state}"),
+                    ->formatStateUsing(fn (int $state): string => app(AcademicStructureReadContract::class)->niveau($state)?->name ?? "#{$state}"),
                 TextColumn::make('annee_scolaire_id')
                     ->label('Année scolaire')
                     ->formatStateUsing(fn (int $state): string => app(AnneeScolaireServiceContract::class)->getAnneeScolaire($state)?->libelle ?? "#{$state}"),
@@ -82,7 +84,7 @@ class GrilleFraisResource extends Resource
                 SelectFilter::make('type_frais_recurrent_id')
                     ->label('Type de frais')
                     ->options(fn (): array => TypeFraisRecurrent::query()->pluck('nom', 'id')->all()),
-            ]);
+            ]), static::class);
     }
 
     public static function getPages(): array

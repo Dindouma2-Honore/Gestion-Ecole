@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Communication\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Modules\Communication\Filament\Resources\MessageParentResource\Pages;
 use App\Modules\Communication\Models\MessageParent;
+use App\Modules\Scolarite\Contracts\AcademicStructureCatalogContract;
 use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
@@ -15,6 +17,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 use UnitEnum;
 
 class MessageParentResource extends Resource
@@ -45,7 +48,7 @@ class MessageParentResource extends Resource
 
                 Select::make('parent_id')
                     ->label('Parent / Tuteur')
-                    ->options(fn (): array => \Illuminate\Support\Facades\DB::table('parents_tuteurs')
+                    ->options(fn (): array => DB::table('parents_tuteurs')
                         ->get()
                         ->mapWithKeys(fn ($p) => [$p->id => trim("{$p->prenom} {$p->nom}")])
                         ->toArray()
@@ -75,10 +78,10 @@ class MessageParentResource extends Resource
                     ->label('Cible spécifique')
                     ->options(function ($get): array {
                         if ($get('cible_type') === 'classe') {
-                            return \Illuminate\Support\Facades\DB::table('classes')->pluck('nom', 'id')->toArray();
+                            return DB::table('classes')->pluck('nom', 'id')->toArray();
                         }
                         if ($get('cible_type') === 'niveau') {
-                            return \Illuminate\Support\Facades\DB::table('niveaux')->pluck('nom', 'id')->toArray();
+                            return collect(app(AcademicStructureCatalogContract::class)->niveaux())->pluck('name', 'id')->all();
                         }
 
                         return [];
@@ -89,7 +92,7 @@ class MessageParentResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordModal::configure($table
             ->columns([
                 Tables\Columns\TextColumn::make('id')->sortable(),
                 Tables\Columns\TextColumn::make('type')->badge(),
@@ -100,7 +103,7 @@ class MessageParentResource extends Resource
             ])
             ->actions([
                 ViewAction::make(),
-            ]);
+            ]), static::class);
     }
 
     public static function getPages(): array

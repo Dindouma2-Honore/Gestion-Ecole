@@ -5,18 +5,18 @@ declare(strict_types=1);
 namespace App\Modules\Socle\Filament\Resources;
 
 use App\Models\User;
+use App\Modules\Scolarite\Contracts\AcademicStructureCatalogContract;
 use App\Modules\Scolarite\Contracts\CourrierDestinataireServiceContract;
 use App\Modules\Socle\Contracts\CourrierServiceContract;
 use App\Modules\Socle\Models\Courrier;
 use App\Modules\Socle\Models\CourrierModele;
 use App\Modules\Socle\Models\Groupe;
-use App\Modules\Socle\Models\Niveau;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -59,7 +59,9 @@ class CourrierResource extends Resource
                     ->live()
                     ->visible(fn ($get): bool => $get('type') === 'sortant')
                     ->afterStateUpdated(function ($state, callable $set): void {
-                        if (! $state) { return; }
+                        if (! $state) {
+                            return;
+                        }
                         $contenu = app(CourrierServiceContract::class)->appliquerModele((int) $state);
                         $set('objet', $contenu['objet']);
                         $set('contenu', $contenu['contenu']);
@@ -100,7 +102,7 @@ class CourrierResource extends Resource
                     ->options(fn (): array => app(CourrierDestinataireServiceContract::class)->optionsParents())
                     ->visible(fn ($get): bool => $get('type') === 'sortant' && $get('cible_type') === 'parents_selectionnes'),
                 Select::make('niveau_ids')->label('Niveaux')->multiple()->searchable()
-                    ->options(fn (): array => Niveau::orderBy('ordre')->pluck('nom', 'id')->all())
+                    ->options(fn (): array => collect(app(AcademicStructureCatalogContract::class)->niveaux())->pluck('name', 'id')->all())
                     ->visible(fn ($get): bool => $get('type') === 'sortant' && $get('cible_type') === 'niveau'),
                 Select::make('classe_ids')->label('Classes / sous-niveaux')->multiple()->searchable()
                     ->options(fn (): array => app(CourrierDestinataireServiceContract::class)->optionsClasses())

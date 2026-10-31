@@ -13,11 +13,12 @@ class PlanMaintenancePreventive extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'equipement_id', 'frequence_jours', 'derniere_execution', 'prochaine_echeance',
+        'equipement_id', 'responsable_id', 'frequence_jours', 'checklist',
+        'derniere_execution', 'prochaine_echeance', 'actif',
     ];
 
     protected $casts = [
         'derniere_execution' => 'date',
-        'prochaine_echeance' => 'date',
+        'prochaine_echeance' => 'date', 'actif' => 'boolean',
     ];
 }

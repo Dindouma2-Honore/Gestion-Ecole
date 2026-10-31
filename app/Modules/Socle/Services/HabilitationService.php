@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Socle\Services;
 
+use App\Filament\Support\HabilitationCatalog;
 use App\Models\User;
-use App\Modules\Communication\Contracts\NotificationServiceContract;
 use App\Modules\Socle\Contracts\AuditServiceContract;
+use App\Modules\Socle\Contracts\Events\UserFeatureAccessChanged;
 use App\Modules\Socle\Contracts\HabilitationServiceContract;
 use App\Modules\Socle\Exceptions\FonctionnaliteIntrouvableException;
 use App\Modules\Socle\Exceptions\MotifDesactivationHabilitationRequisException;
@@ -26,7 +27,6 @@ class HabilitationService implements HabilitationServiceContract
 
     public function __construct(
         private readonly AuditServiceContract $audit,
-        private readonly NotificationServiceContract $notifications,
     ) {}
 
     public static function getRolesAdministrables(): array
@@ -114,7 +114,7 @@ class HabilitationService implements HabilitationServiceContract
             ->get()
             ->keyBy('fonctionnalite_id');
 
-        return Fonctionnalite::query()->where('actif', true)->orderBy('categorie')->orderBy('ordre')->get()
+        return $this->fonctionnalitesVisiblesDansLesHabilitations()
             ->map(function (Fonctionnalite $fonctionnalite) use ($user, $userRecords): Fonctionnalite {
                 $record = $userRecords->get($fonctionnalite->id);
                 if ($record !== null) {
@@ -167,10 +167,10 @@ class HabilitationService implements HabilitationServiceContract
             ->get()
             ->keyBy('fonctionnalite_id');
 
-        return Fonctionnalite::query()->where('actif', true)->orderBy('categorie')->orderBy('ordre')->get()
-            ->map(function (Fonctionnalite $fonctionnalite) use ($records): Fonctionnalite {
+        return $this->fonctionnalitesVisiblesDansLesHabilitations()
+            ->map(function (Fonctionnalite $fonctionnalite) use ($records, $role): Fonctionnalite {
                 $record = $records->get($fonctionnalite->id);
-                $fonctionnalite->setAttribute('habilitation_active', (bool) ($record->actif ?? true));
+                $fonctionnalite->setAttribute('habilitation_active', (bool) ($record->actif ?? in_array($role, self::ROLES_STAFF, true)));
                 $fonctionnalite->setAttribute('dernier_motif', $record?->dernier_motif);
 
                 return $fonctionnalite;
@@ -197,20 +197,18 @@ class HabilitationService implements HabilitationServiceContract
     {
         DB::transaction(function () use ($fonctionnalites): void {
             foreach ($fonctionnalites as $donnees) {
-                Fonctionnalite::query()->updateOrCreate(['code' => $donnees['code']], $donnees);
-            }
-
-            $roleNames = self::getRolesAdministrables();
-            $roles = Role::query()->whereIn('name', $roleNames)->get();
-            $modules = Fonctionnalite::query()->get();
-            foreach ($roles as $role) {
-                foreach ($modules as $module) {
-                    HabilitationRoleFonctionnalite::query()->firstOrCreate(
-                        ['role_id' => $role->id, 'fonctionnalite_id' => $module->id],
-                        ['actif' => true],
-                    );
+                $existing = Fonctionnalite::query()->where('code', $donnees['code'])->first();
+                if ($existing) {
+                    unset($donnees['actif']);
+                    $existing->update($donnees);
+                } else {
+                    Fonctionnalite::query()->create($donnees);
                 }
             }
+
+            // Synchronizing descriptions must never grant module access to roles.
+            // Existing role, group and user assignments are preserved.
+
         });
     }
 
@@ -235,7 +233,7 @@ class HabilitationService implements HabilitationServiceContract
 
             User::role($roleModel->name)
                 ->where('statut', 'actif')
-                ->each(fn (User $user) => $this->notifierChangement($user, $fonctionnalite, $actif));
+                ->each(fn (User $user) => $this->publierChangement($user, $fonctionnalite, $actif));
         });
     }
 
@@ -255,20 +253,21 @@ class HabilitationService implements HabilitationServiceContract
             $this->audit->enregistrerAvecMotif($habilitation, $description, $motifAudit);
 
             if ($user->statut === 'actif') {
-                $this->notifierChangement($user, $fonctionnalite, $actif);
+                $this->publierChangement($user, $fonctionnalite, $actif);
             }
         });
     }
 
-    private function notifierChangement(User $user, Fonctionnalite $fonctionnalite, bool $actif): void
+    private function publierChangement(User $user, Fonctionnalite $fonctionnalite, bool $actif): void
     {
-        $this->notifications->envoyer('in_app', 'habilitation_modifiee', $user, [
-            'fonctionnalite' => $fonctionnalite->nom,
-            'code' => $fonctionnalite->code,
-            'module' => $fonctionnalite->categorie,
-            'action' => $actif ? 'accordee' : 'retiree',
-            'date' => now()->toDateTimeString(),
-        ]);
+        event(new UserFeatureAccessChanged(
+            userId: $user->id,
+            featureCode: $fonctionnalite->code,
+            featureName: $fonctionnalite->nom,
+            category: $fonctionnalite->categorie,
+            granted: $actif,
+            occurredAt: now()->toDateTimeString(),
+        ));
     }
 
     private function fonctionnaliteActive(string $moduleCode): Fonctionnalite
@@ -276,6 +275,16 @@ class HabilitationService implements HabilitationServiceContract
         $fonctionnalite = Fonctionnalite::query()->where('code', $moduleCode)->where('actif', true)->first();
 
         return $fonctionnalite ?? throw new FonctionnaliteIntrouvableException($moduleCode);
+    }
+
+    private function fonctionnalitesVisiblesDansLesHabilitations(): Collection
+    {
+        return Fonctionnalite::query()
+            ->where('actif', true)
+            ->whereIn('code', HabilitationCatalog::visibleMenuFeatureCodes())
+            ->orderBy('categorie')
+            ->orderBy('ordre')
+            ->get();
     }
 
     private function groupeAccordeFonctionnalite(User $user, Fonctionnalite $fonctionnalite): bool

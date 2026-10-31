@@ -7,6 +7,7 @@ namespace App\Modules\Scolarite\Services;
 use App\Modules\Scolarite\Contracts\EleveServiceInterface;
 use App\Modules\Scolarite\Exceptions\EleveIntrouvableException;
 use App\Modules\Scolarite\Models\Eleve;
+use App\Modules\Socle\Contracts\Scopes\NiveauScope;
 use App\Modules\Socle\Contracts\ParametrageServiceContract;
 
 class EleveService implements EleveServiceInterface
@@ -22,19 +23,32 @@ class EleveService implements EleveServiceInterface
 
     public function getEleve(int $eleveId): array
     {
-        $eleve = Eleve::with('inscriptions')->find($eleveId);
+        $eleve = Eleve::with(['inscriptions.classe', 'parentsTuteurs'])->find($eleveId);
 
         if (! $eleve) {
             throw EleveIntrouvableException::pourId($eleveId);
         }
 
-        $inscriptionActive = $eleve->inscriptions->firstWhere('statut', 'validee');
+        $inscriptionActive = $eleve->inscriptions
+            ->whereIn('statut', ['active', 'validee', 'en_attente_versement'])
+            ->sortByDesc('created_at')
+            ->first();
+
+        $parent = $eleve->parentsTuteurs->firstWhere('pivot.responsable_paiement', true)
+            ?? $eleve->parentsTuteurs->first();
 
         return [
             'id' => $eleve->id,
             'nom' => $eleve->nom,
             'prenom' => $eleve->prenom,
+            'nom_complet' => trim("{$eleve->nom} {$eleve->prenom}"),
+            'matricule' => $eleve->matricule_permanent,
+            'matricule_permanent' => $eleve->matricule_permanent,
             'classe_id' => $inscriptionActive?->classe_id,
+            'classe_nom' => $inscriptionActive?->classe?->nom,
+            'parent_nom' => $parent?->nom ?: ($eleve->nom_tuteur ?: $eleve->nom_pere),
+            'parent_telephone' => $parent?->telephone ?: $eleve->telephone_tuteur,
+            'sexe' => $eleve->sexe,
         ];
     }
 
@@ -44,9 +58,33 @@ class EleveService implements EleveServiceInterface
             'nom' => $donnees['nom'],
             'prenom' => $donnees['prenom'],
             'date_naissance' => $donnees['date_naissance'] ?? null,
+            'lieu_naissance' => $donnees['lieu_naissance'] ?? null,
             'sexe' => $donnees['sexe'] ?? null,
+            'nationalite' => $donnees['nationalite'] ?? null,
             'photo' => $donnees['photo'] ?? null,
-            'statut' => 'prospect',
+            'ancien_etablissement' => $donnees['ancien_etablissement'] ?? null,
+            'derniere_classe_frequente' => $donnees['derniere_classe_frequente'] ?? null,
+            'email' => $donnees['email'] ?? null,
+            'nom_tuteur' => $donnees['nom_tuteur'] ?? null,
+            'telephone_tuteur' => $donnees['telephone_tuteur'] ?? null,
+            'telephone_secondaire' => $donnees['telephone_secondaire'] ?? null,
+            'contact_urgence_nom' => $donnees['contact_urgence_nom'] ?? null,
+            'contact_urgence_telephone' => $donnees['contact_urgence_telephone'] ?? null,
+            'contact_urgence_lien' => $donnees['contact_urgence_lien'] ?? null,
+            'nom_pere' => $donnees['nom_pere'] ?? null,
+            'nom_mere' => $donnees['nom_mere'] ?? null,
+            'redoublant' => (bool) ($donnees['redoublant'] ?? false),
+            'transfere' => (bool) ($donnees['transfere'] ?? false),
+            'numero_decision' => $donnees['numero_decision'] ?? null,
+            'exonere_frais_examen' => (bool) ($donnees['exonere_frais_examen'] ?? false),
+            'demissionne' => (bool) ($donnees['demissionne'] ?? false),
+            'exclu_scolaire' => (bool) ($donnees['exclu_scolaire'] ?? false),
+            'info_sms' => (bool) ($donnees['info_sms'] ?? false),
+            'moyenne_legacy' => $donnees['moyenne_legacy'] ?? null,
+            'exclu_inscription' => (bool) ($donnees['exclu_inscription'] ?? false),
+            'bonus_scolaire' => (int) ($donnees['bonus_scolaire'] ?? 0),
+            'observation' => $donnees['observation'] ?? null,
+            'statut' => $donnees['statut'] ?? 'prospect',
         ]);
 
         return $eleve->toArray();
@@ -54,13 +92,18 @@ class EleveService implements EleveServiceInterface
 
     public function genererMatricule(): string
     {
-        return $this->parametrageService->genererNumero('matricule_eleve');
+        do {
+            $matricule = $this->parametrageService->genererNumero('matricule_eleve');
+        } while (Eleve::withTrashed()->where('matricule_permanent', $matricule)->exists());
+
+        return $matricule;
     }
 
     public function getNiveauId(int $eleveId): int
     {
         $eleve = Eleve::with(['inscriptions' => fn ($query) => $query
-            ->whereIn('statut', ['validee', 'en_attente_versement'])
+            ->withoutGlobalScopes([NiveauScope::class])
+            ->whereIn('statut', ['active', 'validee', 'en_attente_versement'])
             ->latest('date_inscription')
             ->with('classe')])
             ->find($eleveId);

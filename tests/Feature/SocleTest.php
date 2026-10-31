@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Modules\Scolarite\Models\Niveau;
 use App\Modules\Socle\Contracts\AnneeScolaireServiceContract;
 use App\Modules\Socle\Contracts\AuditServiceContract;
 use App\Modules\Socle\Contracts\ParametrageServiceContract;
@@ -10,7 +11,6 @@ use App\Modules\Socle\Exceptions\MotifObligatoireException;
 use App\Modules\Socle\Exceptions\RoleNiveauRequisException;
 use App\Modules\Socle\Models\AnneeScolaire;
 use App\Modules\Socle\Models\FormatNumerotation;
-use App\Modules\Socle\Models\Niveau;
 use App\Modules\Socle\Services\AssignationRoleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;

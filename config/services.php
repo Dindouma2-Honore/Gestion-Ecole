@@ -14,6 +14,8 @@ return [
     |
     */
 
+    'whatsapp' => require __DIR__.'/whatsapp.php',
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],
@@ -33,13 +35,6 @@ return [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
-    ],
-
-    'whatsapp' => [
-        'token' => env('WHATSAPP_TOKEN'),
-        'phone_id' => env('WHATSAPP_PHONE_ID'),
-        'api_version' => env('WHATSAPP_API_VERSION', 'v25.0'),
-        'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),
     ],
 
 ];

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\RH\Filament\Resources;
 
+use App\Filament\Support\AmbassadorsDesign;
+use App\Modules\RH\Filament\Support\RhActions;
+use App\Modules\RH\Models\Employe;
 use App\Modules\RH\Models\Enseignant;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -30,19 +33,42 @@ class EnseignantResource extends Resource
     {
         return $schema->components([
             Select::make('employe_id')
-                ->relationship('employe', 'nom')
-                ->required(),
+                ->label('Membre du personnel')
+                ->options(function (?Enseignant $record): array {
+                    return Employe::query()
+                        ->where(function (Builder $query) use ($record): void {
+                            $query->whereDoesntHave('enseignant');
+                            if ($record?->employe_id) {
+                                $query->orWhere('id', $record->employe_id);
+                            }
+                        })
+                        ->orderBy('nom')
+                        ->orderBy('prenom')
+                        ->get()
+                        ->mapWithKeys(fn (Employe $e): array => [
+                            $e->id => trim($e->nom_complet.($e->matricule ? " ({$e->matricule})" : '')),
+                        ])
+                        ->all();
+                })
+                ->searchable()
+                ->preload()
+                ->required()
+                ->disabledOn('edit')
+                ->helperText('Sélectionnez un membre du personnel non encore qualifié comme enseignant.'),
             TextInput::make('specialite')
+                ->label('Spécialité')
                 ->required()
                 ->maxLength(100),
             Select::make('statut_contractuel')
+                ->label('Statut contractuel')
                 ->options([
-                    'permanent' => 'Permanent',
+                    'titulaire' => 'Titulaire',
                     'vacataire' => 'Vacataire',
                     'contractuel' => 'Contractuel',
                 ])
                 ->required(),
             TextInput::make('charge_horaire_hebdo')
+                ->label('Charge horaire hebdomadaire (h)')
                 ->numeric()
                 ->default(18.0)
                 ->required(),
@@ -51,6 +77,7 @@ class EnseignantResource extends Resource
 
     public static function table(Table $table): Table
     {
+        AmbassadorsDesign::configureTable($table, null);
         $livewire = $table->getLivewire();
         $cards = $livewire instanceof EnseignantResource\Pages\ListEnseignants
             && method_exists($livewire, 'usesCardLayout')
@@ -68,7 +95,8 @@ class EnseignantResource extends Resource
                 TextColumn::make('statut_contractuel')->badge(),
                 TextColumn::make('charge_horaire_hebdo')->label('Charge (h/sem)')->sortable(),
             ])
-            ->contentGrid($cards ? ['md' => 2, 'xl' => 3] : null);
+            ->contentGrid($cards ? ['md' => 2, 'xl' => 3] : null)
+            ->recordActions([RhActions::edit()->label('Modifier')]);
     }
 
     public static function getPages(): array

@@ -3,7 +3,7 @@
 namespace App\Modules\RH\Filament\Resources\SanctionPersonnelResource\Pages;
 
 use App\Modules\RH\Filament\Resources\SanctionPersonnelResource;
-use Filament\Actions;
+use App\Modules\RH\Filament\Support\RhActions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListSanctionPersonnels extends ListRecords
@@ -13,7 +13,7 @@ class ListSanctionPersonnels extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            RhActions::create(),
         ];
     }
 }

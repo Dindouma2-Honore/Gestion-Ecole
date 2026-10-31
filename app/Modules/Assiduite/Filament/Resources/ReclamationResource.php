@@ -2,6 +2,7 @@
 
 namespace App\Modules\Assiduite\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Modules\Assiduite\Filament\Resources\ReclamationResource\Pages;
 use App\Modules\Assiduite\Models\Reclamation;
 use Filament\Forms\Components\DatePicker;
@@ -15,6 +16,8 @@ use Filament\Tables\Table;
 
 class ReclamationResource extends Resource
 {
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $model = Reclamation::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-exclamation-triangle';
@@ -71,7 +74,7 @@ class ReclamationResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordModal::configure($table
             ->columns([
                 TextColumn::make('type')->sortable(),
                 TextColumn::make('categorie')->searchable(),
@@ -95,7 +98,7 @@ class ReclamationResource extends Resource
                         'resolue', 'cloturee' => 'success',
                         default => 'gray',
                     }),
-            ]);
+            ]), static::class);
     }
 
     public static function getPages(): array

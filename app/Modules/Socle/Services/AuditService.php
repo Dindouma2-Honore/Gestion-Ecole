@@ -22,10 +22,10 @@ class AuditService implements AuditServiceContract
         auditLog()
             ->causedBy(Auth::user())
             ->performedOn($sujet)
-            ->withProperties([
+            ->withProperties(array_merge($this->changements($sujet), [
                 'motif' => $motif,
                 'ip_address' => request()?->ip(),
-            ])
+            ]))
             ->log($description);
     }
 
@@ -34,7 +34,7 @@ class AuditService implements AuditServiceContract
         auditLog()
             ->causedBy(Auth::user())
             ->performedOn($sujet)
-            ->withProperties(['ip_address' => request()?->ip()])
+            ->withProperties(array_merge($this->changements($sujet), ['ip_address' => request()?->ip()]))
             ->log($description);
     }
 
@@ -53,5 +53,19 @@ class AuditService implements AuditServiceContract
         return ActivityLog::forSubject($sujet)
             ->orderByDesc('created_at')
             ->get();
+    }
+
+    /** @return array{old?: array<string, mixed>, attributes?: array<string, mixed>} */
+    private function changements(Model $sujet): array
+    {
+        $nouveaux = collect($sujet->getChanges())->except(['updated_at'])->all();
+        if ($nouveaux === []) {
+            return [];
+        }
+
+        return [
+            'old' => collect(array_keys($nouveaux))->mapWithKeys(fn (string $champ): array => [$champ => $sujet->getRawOriginal($champ)])->all(),
+            'attributes' => $nouveaux,
+        ];
     }
 }

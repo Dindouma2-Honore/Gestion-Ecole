@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Logistique\Filament\Resources;
 
 use App\Filament\Support\NiveauScopeSelect;
+use App\Filament\Support\RecordModal;
 use App\Modules\Logistique\Filament\Resources\LivreResource\Pages;
 use App\Modules\Logistique\Models\Livre;
 use BackedEnum;
@@ -25,6 +26,8 @@ class LivreResource extends Resource
     protected static string|UnitEnum|null $navigationGroup = 'Logistique';
 
     protected static ?string $navigationLabel = 'Bibliothèque';
+
+    protected static bool $shouldRegisterNavigation = false;
 
     protected static ?string $modelLabel = 'livre';
 
@@ -48,7 +51,7 @@ class LivreResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        $table = $table
             ->columns([
                 Tables\Columns\TextColumn::make('titre')->label('Titre')->searchable(),
                 Tables\Columns\TextColumn::make('auteur')->label('Auteur')->placeholder('—')->searchable(),
@@ -60,6 +63,8 @@ class LivreResource extends Resource
             ->actions([
                 EditAction::make(),
             ]);
+
+        return RecordModal::configure($table, static::class);
     }
 
     public static function getPages(): array

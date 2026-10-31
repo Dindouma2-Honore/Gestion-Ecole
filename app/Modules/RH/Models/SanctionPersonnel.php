@@ -14,6 +14,7 @@ class SanctionPersonnel extends Model
         'employe_id',
         'type',
         'motif',
+        'observations',
         'date_sanction',
         'duree_jours',
         'document_justificatif_id',

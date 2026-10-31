@@ -10,6 +10,7 @@ use App\Modules\Logistique\Models\MenuCantine;
 use App\Modules\Logistique\Models\PresenceCantine;
 use App\Modules\Socle\Contracts\AnneeScolaireServiceContract;
 use App\Modules\VieScolaire\Contracts\SanteServiceInterface;
+use Illuminate\Support\Carbon;
 
 class CantineService implements CantineServiceInterface
 {
@@ -20,7 +21,7 @@ class CantineService implements CantineServiceInterface
 
     public function souscrireAbonnement(int $eleveId, string $type, \DateTimeInterface $dateDebut): object
     {
-        $dateDebutCarbon = \Illuminate\Support\Carbon::instance($dateDebut);
+        $dateDebutCarbon = Carbon::instance($dateDebut);
 
         $dateFin = match ($type) {
             'mensuel' => $dateDebutCarbon->copy()->addMonth(),

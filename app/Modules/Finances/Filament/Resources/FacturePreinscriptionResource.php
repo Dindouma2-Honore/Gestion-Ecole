@@ -31,7 +31,7 @@ class FacturePreinscriptionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-document-currency-dollar';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Finances';
+    protected static string|UnitEnum|null $navigationGroup = 'Scolarité';
 
     protected static ?string $navigationLabel = 'Préinscriptions à contrôler';
 
@@ -93,7 +93,9 @@ class FacturePreinscriptionResource extends Resource
             Action::make('renvoyer')
                 ->label('Renvoyer la facture')
                 ->icon('heroicon-o-envelope')
-                ->visible(fn (FacturePreinscription $record): bool => $record->statut === 'en_attente_versement' && (Auth::user()?->hasAnyRole(['Comptable', 'Fondateur']) ?? false))
+                ->visible(fn (FacturePreinscription $record): bool => $record->statut === 'en_attente_versement'
+                    && filter_var($record->parent_email, FILTER_VALIDATE_EMAIL)
+                    && (Auth::user()?->hasAnyRole(['Comptable', 'Fondateur']) ?? false))
                 ->requiresConfirmation()
                 ->action(function (FacturePreinscription $record): void {
                     app(FacturePreinscriptionServiceContract::class)->renvoyerFactureProvisoire($record->id);
@@ -106,26 +108,36 @@ class FacturePreinscriptionResource extends Resource
                 ->visible(fn (FacturePreinscription $record): bool => $record->statut === 'en_attente_versement' && (Auth::user()?->hasAnyRole(['Comptable', 'Fondateur']) ?? false))
                 ->requiresConfirmation()
                 ->modalHeading('Confirmer la réception du paiement')
-                ->modalDescription("Cette action validera définitivement l'inscription, générera le reçu et enverra la confirmation au parent.")
+                ->modalDescription("Cette action validera définitivement l'inscription et générera le reçu. La confirmation sera envoyée si le parent possède une adresse e-mail valide.")
                 ->modalSubmitActionLabel('Oui, confirmer le paiement')
                 ->schema([
                     Select::make('mode')->options(['especes' => 'Espèces', 'bancaire' => 'Virement bancaire', 'mobile_money' => 'Mobile Money'])->required(),
                     TextInput::make('reference_transaction')->label('Référence de transaction'),
                 ])
                 ->action(function (FacturePreinscription $record, array $data, Component $livewire): void {
-                    app(FacturePreinscriptionServiceContract::class)
-                        ->confirmerVersement($record->id, $data['mode'], $data['reference_transaction'] ?? null);
+                    try {
+                        app(FacturePreinscriptionServiceContract::class)
+                            ->confirmerVersement($record->id, $data['mode'], $data['reference_transaction'] ?? null);
 
-                    Notification::make()
-                        ->title($data['mode'] === 'especes' ? 'Paiement en espèces confirmé' : 'Versement confirmé')
-                        ->body("L'inscription est maintenant validée et le message de confirmation a été envoyé au parent.")
-                        ->success()
-                        ->persistent()
-                        ->send();
+                        Notification::make()
+                            ->title($data['mode'] === 'especes' ? 'Paiement en espèces confirmé' : 'Versement confirmé')
+                            ->body("L'inscription est maintenant validée et le reçu est disponible.")
+                            ->success()
+                            ->persistent()
+                            ->send();
 
-                    // The table and its badges must reflect the persisted state
-                    // immediately, without requiring a manual browser refresh.
-                    $livewire->dispatch('platform-state-updated');
+                        // The table and its badges must reflect the persisted state
+                        // immediately, without requiring a manual browser refresh.
+                        $livewire->dispatch('platform-state-updated');
+                    } catch (\Throwable $e) {
+                        report($e);
+                        Notification::make()
+                            ->title('Erreur lors de la confirmation du versement')
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->persistent()
+                            ->send();
+                    }
                 }),
         ])->defaultSort('created_at', 'desc');
     }

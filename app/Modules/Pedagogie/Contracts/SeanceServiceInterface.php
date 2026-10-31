@@ -42,4 +42,21 @@ interface SeanceServiceInterface
      * accéder directement.
      */
     public function marquerProgressionRenseignee(int $seanceId): void;
+
+    /**
+     * Enregistre un remplacement ponctuel d'enseignant pour cette séance.
+     */
+    public function remplacerEnseignant(int $seanceId, int $nouveauEnseignantId, string $motif): object;
+
+    /**
+     * Renseigne les détails de la séance réalisée (contenu, devoirs, durée, leçon).
+     */
+    public function renseignerSeance(int $seanceId, array $donnees): object;
+
+    /**
+     * Verrouille l'appel d'une séance (clôture par la vie scolaire ou la direction).
+     */
+    public function verrouillerAppel(int $seanceId): void;
+
+    public function estAppelVerrouille(int $seanceId): bool;
 }

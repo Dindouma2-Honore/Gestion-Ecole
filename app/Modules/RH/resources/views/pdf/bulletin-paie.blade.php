@@ -68,7 +68,11 @@
         </div>
         <div class="header-right">
             <div class="doc-type">BULLETIN DE PAIE</div>
-            <div class="doc-number">Période : {{ $moisNom }} {{ $bulletin->annee }}</div>
+            <div class="doc-number">Période :
+                {{ $bulletin->periode_debut && $bulletin->periode_fin
+                    ? $bulletin->periode_debut->format('d/m/Y').' — '.$bulletin->periode_fin->format('d/m/Y')
+                    : $moisNom.' '.$bulletin->annee }}
+            </div>
         </div>
     </div>
     <div class="accent"></div>
@@ -96,9 +100,10 @@
         </div>
 
         <div class="info">
+            <div class="info-cell"><span class="label">Période de paiement</span><strong>{{ $bulletin->periode_debut && $bulletin->periode_fin ? $bulletin->periode_debut->format('d/m/Y').' au '.$bulletin->periode_fin->format('d/m/Y') : $moisNom.' '.$bulletin->annee }}</strong></div>
             <div class="info-cell"><span class="label">Salaire de Base</span><strong>{{ number_format((float) $bulletin->salaire_base, 0, ',', ' ') }} FCFA</strong></div>
             <div class="info-cell"><span class="label">Total Primes</span><strong>+ {{ number_format((float) $bulletin->total_primes, 0, ',', ' ') }} FCFA</strong></div>
-            <div class="info-cell"><span class="label">Total Retenues</span><strong>- {{ number_format((float) $bulletin->total_retenues, 0, ',', ' ') }} FCFA</strong></div>
+            <div class="info-cell"><span class="label">Total Déductions</span><strong>- {{ number_format((float) $bulletin->total_retenues + (float) $bulletin->total_cotisations + (float) $bulletin->avances_deduites, 0, ',', ' ') }} FCFA</strong></div>
             <div class="info-cell"><span class="label">Date de Paiement</span><strong>{{ $bulletin->date_paiement?->format('d/m/Y') ?? 'Non réglé' }}</strong></div>
         </div>
 
@@ -153,6 +158,27 @@
             </tbody>
         </table>
 
+        @if ($bulletin->lignes->isNotEmpty())
+        <table class="items" style="margin-top: 8mm;">
+            <thead>
+                <tr>
+                    <th>Élément détaillé</th>
+                    <th>Date de référence</th>
+                    <th class="num">Montant</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($bulletin->lignes as $ligne)
+                <tr>
+                    <td>{{ $ligne->libelle }}</td>
+                    <td>{{ $ligne->date_reference?->format('d/m/Y') ?? 'Période du bulletin' }}</td>
+                    <td class="num">{{ number_format((float) $ligne->montant, 0, ',', ' ') }} FCFA</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        @endif
+
         <table class="totals">
             <tr>
                 <td>Total Brut (Base + Primes)</td>
@@ -160,7 +186,7 @@
             </tr>
             <tr>
                 <td>Total Retenues</td>
-                <td class="amount">- {{ number_format((float) $bulletin->total_retenues, 0, ',', ' ') }} FCFA</td>
+                <td class="amount">- {{ number_format((float) $bulletin->total_retenues + (float) $bulletin->total_cotisations + (float) $bulletin->avances_deduites, 0, ',', ' ') }} FCFA</td>
             </tr>
             <tr class="grand">
                 <td>Net à Payer</td>

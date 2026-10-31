@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Modules\Socle\Models\Niveau;
+use App\Modules\Scolarite\Models\Niveau;
 use App\Support\Facilg\FacilgSqlDump;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;

@@ -15,10 +15,13 @@ use App\Modules\Finances\Filament\Resources\PaiementResource\Pages\CreatePaiemen
 use App\Modules\Finances\Models\GrilleFrais;
 use App\Modules\Finances\Models\Paiement;
 use App\Modules\Scolarite\Contracts\EleveServiceInterface;
+use App\Modules\Scolarite\Models\Classe;
+use App\Modules\Scolarite\Models\Eleve;
+use App\Modules\Scolarite\Models\Inscription;
+use App\Modules\Scolarite\Models\Niveau;
 use App\Modules\Socle\Models\AnneeScolaire;
 use App\Modules\Socle\Models\Document;
 use App\Modules\Socle\Models\FormatNumerotation;
-use App\Modules\Socle\Models\Niveau;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -151,13 +154,33 @@ class FinancesE40Test extends TestCase
 
     public function test_filament_creates_and_lists_payments_through_the_contract(): void
     {
+        $eleve = Eleve::create(['nom' => 'Doe', 'prenom' => 'Jane', 'statut' => 'inscrit']);
+        $classe = Classe::create([
+            'nom' => 'CM2 A',
+            'niveau_id' => Niveau::firstOrFail()->id,
+            'annee_scolaire_id' => $this->annee->id,
+            'capacite_max' => 30,
+        ]);
+        Inscription::create([
+            'eleve_id' => $eleve->id,
+            'classe_id' => $classe->id,
+            'annee_scolaire_id' => $this->annee->id,
+            'type' => 'inscription',
+            'date_inscription' => today(),
+            'statut' => 'active',
+        ]);
+
+        $this->app->instance(EleveServiceInterface::class, new FakeEleveService([
+            $eleve->id => ['nom' => 'Doe', 'prenom' => 'Jane', 'classe_id' => $classe->id, 'niveau_id' => $classe->niveau_id],
+        ]));
+
         $user = User::factory()->create(['statut' => 'actif']);
         $user->assignRole('Fondateur');
         $this->actingAs($user);
 
         Livewire::test(CreatePaiement::class)
             ->fillForm([
-                'eleve_id' => 1,
+                'eleve_id' => $eleve->id,
                 'montant' => 15000,
                 'mode' => 'mobile_money',
                 'reference_mobile_money' => 'MTN-12345',
@@ -166,12 +189,63 @@ class FinancesE40Test extends TestCase
             ->assertHasNoFormErrors();
 
         $this->assertDatabaseHas('paiements', [
-            'eleve_id' => 1,
+            'eleve_id' => $eleve->id,
             'reference_mobile_money' => 'MTN-12345',
             'statut' => 'valide',
         ]);
         $this->get(PaiementResource::getUrl('index'))
             ->assertSuccessful()
             ->assertSee('Jane Doe');
+    }
+
+    public function test_create_paiement_with_closed_caisse_halts_gracefully_with_notification(): void
+    {
+        $caisse = app(CaisseServiceContract::class);
+        $caisse->cloturerSession(0);
+
+        $eleve = Eleve::create([
+            'matricule_permanent' => 'MAT-TEST-002',
+            'nom' => 'Smith',
+            'prenom' => 'John',
+            'sexe' => 'M',
+            'date_naissance' => '2015-05-15',
+        ]);
+        $classe = Classe::create([
+            'nom' => 'CM2 B',
+            'code' => 'CM2-B',
+            'niveau_id' => Niveau::firstOrFail()->id,
+            'annee_scolaire_id' => $this->annee->id,
+            'capacite_max' => 30,
+        ]);
+        Inscription::create([
+            'eleve_id' => $eleve->id,
+            'classe_id' => $classe->id,
+            'annee_scolaire_id' => $this->annee->id,
+            'type' => 'inscription',
+            'date_inscription' => today(),
+            'statut' => 'active',
+        ]);
+
+        $this->app->instance(EleveServiceInterface::class, new FakeEleveService([
+            $eleve->id => ['nom' => 'Smith', 'prenom' => 'John', 'classe_id' => $classe->id, 'niveau_id' => $classe->niveau_id],
+        ]));
+
+        $user = User::factory()->create(['statut' => 'actif']);
+        $user->assignRole('Fondateur');
+        $this->actingAs($user);
+
+        Livewire::test(CreatePaiement::class)
+            ->fillForm([
+                'eleve_id' => $eleve->id,
+                'montant' => 10000,
+                'mode' => 'especes',
+            ])
+            ->call('create')
+            ->assertNotified('Caisse non disponible');
+
+        $this->assertDatabaseMissing('paiements', [
+            'eleve_id' => $eleve->id,
+            'montant' => 10000,
+        ]);
     }
 }

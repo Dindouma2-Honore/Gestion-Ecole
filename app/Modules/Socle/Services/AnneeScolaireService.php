@@ -7,8 +7,8 @@ namespace App\Modules\Socle\Services;
 use App\Models\User;
 use App\Modules\Socle\Contracts\AnneeScolaireServiceContract;
 use App\Modules\Socle\Contracts\TransfertElevesAnneeContract;
+use App\Modules\Socle\Enums\AcademicYearStatus;
 use App\Modules\Socle\Exceptions\AucuneAnneeActiveException;
-use App\Modules\Socle\Exceptions\TransitionStatutInvalideException;
 use App\Modules\Socle\Models\AnneeScolaire;
 use App\Modules\Socle\Models\Periode;
 use DateTimeImmutable;
@@ -19,7 +19,10 @@ class AnneeScolaireService implements AnneeScolaireServiceContract
 {
     private const ANNEE_ACTIVE_CACHE_KEY = 'annee_scolaire_courante_id_v2';
 
-    public function __construct(private TransfertElevesAnneeContract $transfertEleves) {}
+    public function __construct(
+        private TransfertElevesAnneeContract $transfertEleves,
+        private AcademicYearLifecycleService $lifecycle,
+    ) {}
 
     public function anneeActiveId(): int
     {
@@ -43,31 +46,38 @@ class AnneeScolaireService implements AnneeScolaireServiceContract
 
     public function activerAnnee(int $anneeScolaireId): void
     {
-        DB::transaction(function () use ($anneeScolaireId) {
-            $nouvelle = AnneeScolaire::query()->lockForUpdate()->findOrFail($anneeScolaireId);
-
-            if (! in_array($nouvelle->statut, [AnneeScolaire::STATUT_BROUILLON, AnneeScolaire::STATUT_ACTIVE], true)) {
-                throw new TransitionStatutInvalideException($nouvelle->statut, AnneeScolaire::STATUT_ACTIVE);
-            }
-
-            AnneeScolaire::where('statut', 'active')
-                ->whereKeyNot($anneeScolaireId)
-                ->update(['statut' => 'cloturee']);
-
-            $nouvelle->update(['statut' => AnneeScolaire::STATUT_ACTIVE]);
-        });
-
+        $this->lifecycle->activate($anneeScolaireId);
         $this->oublierAnneeCourante();
     }
 
+    /** Démarre la clôture : l'année reste consultable, sans être modifiable. */
+    public function demarrerClotureAnnee(int $anneeScolaireId): void
+    {
+        $this->lifecycle->beginClosure($anneeScolaireId);
+        $this->oublierAnneeCourante();
+    }
+
+    /** Termine une clôture précédemment démarrée. */
+    public function finaliserClotureAnnee(int $anneeScolaireId): void
+    {
+        $this->lifecycle->completeClosure($anneeScolaireId);
+        $this->oublierAnneeCourante();
+    }
+
+    /**
+     * Compatibilité legacy : l'ancienne action de clôture réalise désormais
+     * les deux transitions contrôlées ACTIVE → CLOTURE_EN_COURS → CLOTUREE.
+     */
     public function cloturerAnnee(int $anneeScolaireId): void
     {
-        $this->transitionner($anneeScolaireId, AnneeScolaire::STATUT_ACTIVE, AnneeScolaire::STATUT_CLOTUREE);
+        $this->lifecycle->close($anneeScolaireId);
+        $this->oublierAnneeCourante();
     }
 
     public function archiverAnnee(int $anneeScolaireId): void
     {
-        $this->transitionner($anneeScolaireId, AnneeScolaire::STATUT_CLOTUREE, AnneeScolaire::STATUT_ARCHIVEE);
+        $this->lifecycle->archive($anneeScolaireId);
+        $this->oublierAnneeCourante();
     }
 
     public function getAnneeCourante(): object
@@ -79,13 +89,13 @@ class AnneeScolaireService implements AnneeScolaireServiceContract
 
         $annee = AnneeScolaire::query()
             ->whereKey((int) $anneeId)
-            ->where('statut', AnneeScolaire::STATUT_ACTIVE)
+            ->where('status', AcademicYearStatus::ACTIVE->value)
             ->first();
 
         if (! $annee) {
             $this->oublierAnneeCourante();
             $annee = AnneeScolaire::query()
-                ->where('statut', AnneeScolaire::STATUT_ACTIVE)
+                ->where('status', AcademicYearStatus::ACTIVE->value)
                 ->first();
         }
 
@@ -115,13 +125,9 @@ class AnneeScolaireService implements AnneeScolaireServiceContract
 
     public function ecritureAutorisee(int $anneeScolaireId, User $user): bool
     {
-        $statut = AnneeScolaire::query()->findOrFail($anneeScolaireId)->statut;
+        $annee = AnneeScolaire::query()->findOrFail($anneeScolaireId);
 
-        if ($statut === AnneeScolaire::STATUT_ARCHIVEE) {
-            return false;
-        }
-
-        return $statut !== AnneeScolaire::STATUT_CLOTUREE || $user->hasRole('Fondateur');
+        return ! $annee->isReadonly();
     }
 
     public function getPeriodes(int $anneeScolaireId): array
@@ -140,25 +146,10 @@ class AnneeScolaireService implements AnneeScolaireServiceContract
         DB::transaction(fn () => $this->transfertEleves->transferer($anneeSourceId, $anneeDestinationId));
     }
 
-    private function transitionner(int $anneeScolaireId, string $attendu, string $destination): void
-    {
-        DB::transaction(function () use ($anneeScolaireId, $attendu, $destination): void {
-            $annee = AnneeScolaire::query()->lockForUpdate()->findOrFail($anneeScolaireId);
-
-            if ($annee->statut !== $attendu) {
-                throw new TransitionStatutInvalideException($annee->statut, $destination);
-            }
-
-            $annee->update(['statut' => $destination]);
-        });
-
-        $this->oublierAnneeCourante();
-    }
-
     private function chargerAnneeActiveId(): int
     {
         $anneeId = AnneeScolaire::query()
-            ->where('statut', AnneeScolaire::STATUT_ACTIVE)
+            ->where('status', AcademicYearStatus::ACTIVE->value)
             ->value('id');
 
         if ($anneeId === null) {

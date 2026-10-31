@@ -14,6 +14,7 @@ use App\Modules\RH\Models\Employe;
 use App\Modules\Socle\Models\AnneeScolaire;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class RHAvanceSalaireTest extends TestCase
@@ -27,6 +28,7 @@ class RHAvanceSalaireTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->travelTo(Carbon::parse('2026-09-15 10:00:00'));
         $this->seed(RolesAndPermissionsSeeder::class);
         $user = User::factory()->create(['statut' => 'actif']);
         $user->assignRole('Fondateur');

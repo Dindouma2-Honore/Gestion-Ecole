@@ -21,8 +21,11 @@ use App\Modules\Finances\Models\Paiement;
 use App\Modules\Finances\Models\RemiseExoneration;
 use App\Modules\Finances\Models\TypeFraisRecurrent;
 use App\Modules\Scolarite\Contracts\EleveServiceInterface;
+use App\Modules\Scolarite\Models\Classe;
+use App\Modules\Scolarite\Models\Eleve;
+use App\Modules\Scolarite\Models\Inscription;
+use App\Modules\Scolarite\Models\Niveau;
 use App\Modules\Socle\Models\AnneeScolaire;
-use App\Modules\Socle\Models\Niveau;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -353,11 +356,31 @@ class FinancesE39Test extends TestCase
         $auteur = User::factory()->create(['statut' => 'actif']);
         $this->actingAs($auteur);
         $this->creerGrille('scolarite', 100000);
+        Eleve::query()->forceCreate([
+            'id' => 1,
+            'matricule_permanent' => 'AEC-0001',
+            'nom' => 'Doe',
+            'prenom' => 'Jane',
+            'statut' => 'actif',
+        ]);
+        $classe = Classe::create([
+            'nom' => 'CM2 A',
+            'niveau_id' => $this->niveau->id,
+            'annee_scolaire_id' => $this->annee->id,
+            'capacite_max' => 30,
+        ]);
+        Inscription::create([
+            'eleve_id' => 1,
+            'classe_id' => $classe->id,
+            'annee_scolaire_id' => $this->annee->id,
+            'type' => 'inscription',
+            'date_inscription' => now(),
+            'statut' => 'validee',
+        ]);
 
         Livewire::test(CreateRemiseExoneration::class)
             ->fillForm([
                 'eleve_id' => 1,
-                'type_frais' => 'scolarite',
                 'type' => 'remise_montant',
                 'valeur' => 10000,
                 'motif' => 'Difficulté financière ponctuelle',
@@ -371,7 +394,8 @@ class FinancesE39Test extends TestCase
         ]);
 
         Livewire::test(ListRemisesExonerations::class)
-            ->assertSee('Jane Doe');
+            ->assertSee('Doe Jane')
+            ->assertSee('Remise de 10 000 FCFA');
 
         $auteur->assignRole('Fondateur');
         $this->get(RemiseExonerationResource::getUrl('index'))

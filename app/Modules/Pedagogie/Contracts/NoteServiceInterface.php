@@ -27,4 +27,28 @@ interface NoteServiceInterface
     public function dateVerrouillage(int $noteId): DateTimeInterface;
 
     public function debloquer(int $noteId, string $motif): void;
+
+    /**
+     * Enregistre un lot de notes pour une évaluation donnée (saisie rapide par classe).
+     *
+     * @param  array<int, array{eleve_id: int, valeur?: ?float, statut_presence?: string, competence_niveau?: ?string, appreciation?: ?string}>  $notesEleves
+     * @return array{evaluation_id: int, nb_saisies: int, nb_absents: int, moyenne: ?float}
+     */
+    public function enregistrerLot(int $evaluationId, array $notesEleves): array;
+
+    /**
+     * Verrouille manuellement l'ensemble d'une évaluation.
+     */
+    public function verrouillerEvaluation(int $evaluationId): void;
+
+    /**
+     * Soumet l'ensemble des notes de l'évaluation pour approbation (statut "soumis").
+     * Exige que tous les élèves de la liste officielle de la classe soient évalués (pas d'oubli).
+     */
+    public function soumettreNotes(int $evaluationId, ?int $soumetteurId = null): void;
+
+    /**
+     * Approbation par le Fondateur et gel définitif des notes et de l'évaluation.
+     */
+    public function approuverNotes(int $evaluationId, int $approbateurId): void;
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Socle\Filament\Resources;
 
+use App\Filament\Support\AmbassadorsDesign;
 use App\Models\User;
 use App\Modules\Socle\Contracts\GroupeServiceContract;
 use App\Modules\Socle\Filament\Pages\ManageGroupePermissions;
@@ -118,7 +119,7 @@ class GroupeResource extends Resource
                     ->label('Gérer les permissions')
                     ->icon('heroicon-o-adjustments-horizontal')
                     ->url(fn (Groupe $record): string => ManageGroupePermissions::getUrl(['groupe' => $record->id])),
-                EditAction::make(),
+                AmbassadorsDesign::goldenFormModal(EditAction::make()),
             ]);
     }
 

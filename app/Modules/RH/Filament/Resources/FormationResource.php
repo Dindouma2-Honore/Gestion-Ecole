@@ -2,6 +2,8 @@
 
 namespace App\Modules\RH\Filament\Resources;
 
+use App\Filament\Support\AmbassadorsDesign;
+use App\Modules\RH\Filament\Support\RhActions;
 use App\Modules\RH\Models\Formation;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Textarea;
@@ -44,6 +46,8 @@ class FormationResource extends Resource
 
     public static function table(Table $table): Table
     {
+        AmbassadorsDesign::configureTable($table, null);
+
         return $table
             ->columns([
                 TextColumn::make('titre')->sortable()->searchable(),
@@ -51,7 +55,8 @@ class FormationResource extends Resource
                 TextColumn::make('date_debut')->date()->sortable(),
                 TextColumn::make('date_fin')->date()->sortable(),
                 TextColumn::make('cout')->money('XAF')->sortable(),
-            ]);
+            ])
+            ->recordActions([RhActions::edit()->label('Modifier')]);
     }
 
     public static function getPages(): array

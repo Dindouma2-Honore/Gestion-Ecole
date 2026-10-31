@@ -6,6 +6,7 @@ namespace App\Modules\Finances\Filament\Resources\RemiseExonerationResource\Page
 
 use App\Modules\Finances\Contracts\FraisScolaireServiceContract;
 use App\Modules\Finances\Filament\Resources\RemiseExonerationResource;
+use App\Modules\Finances\Models\EleveFinancier;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 
@@ -17,12 +18,14 @@ class CreateRemiseExoneration extends CreateRecord
     {
         $data['valeur'] = $data['type'] === 'exoneration_totale' ? 0 : (float) $data['valeur'];
 
-        return app(FraisScolaireServiceContract::class)->accorderRemise(
+        app(FraisScolaireServiceContract::class)->accorderRemise(
             (int) $data['eleve_id'],
-            $data['type_frais'],
+            'scolarite',
             $data['type'],
             (float) $data['valeur'],
             $data['motif'],
         );
+
+        return EleveFinancier::query()->findOrFail((int) $data['eleve_id']);
     }
 }

@@ -10,11 +10,8 @@ use App\Modules\Finances\Contracts\CaisseServiceContract;
 use App\Modules\Finances\Contracts\FraisScolaireServiceContract;
 use App\Modules\Finances\Filament\Pages\BalancePeriode;
 use App\Modules\Finances\Filament\Resources\DepenseResource;
-use App\Modules\Finances\Filament\Resources\FacturePreinscriptionResource;
 use App\Modules\Finances\Filament\Resources\MouvementCaisseResource;
-use App\Modules\Finances\Filament\Resources\PaiementResource;
 use App\Modules\Finances\Models\Depense;
-use App\Modules\Finances\Models\FacturePreinscription;
 use App\Modules\Finances\Models\SessionCaisse;
 use App\Modules\Socle\Contracts\AnneeScolaireServiceContract;
 use Filament\Widgets\Widget;
@@ -30,8 +27,7 @@ class FinancePilotage extends Widget
 
     protected function getViewData(): array
     {
-        app(CaisseServiceContract::class)->garantirSessionOuverte();
-        $session = SessionCaisse::query()->where('statut', 'ouverte')->first();
+        $session = SessionCaisse::query()->where('statut', 'ouverte')->oldest('date_session')->oldest('id')->first();
         $balance = app(BalanceServiceContract::class)->getBalanceDuJour();
 
         try {
@@ -52,12 +48,9 @@ class FinancePilotage extends Widget
             'solde' => $solde,
             'balance' => $balance,
             'impayes' => $impayes,
-            'facturesAControler' => FacturePreinscription::query()->where('statut', 'en_attente_versement')->count(),
             'depensesAValider' => Depense::query()->where('statut', 'en_attente_validation')->count(),
             'urls' => [
                 'caisse' => MouvementCaisseResource::getUrl('index'),
-                'paiements' => PaiementResource::getUrl('index'),
-                'inscriptions' => FacturePreinscriptionResource::getUrl('index'),
                 'depenses' => DepenseResource::getUrl('index'),
                 'situation' => SituationEtablissement::getUrl(),
                 'balance' => BalancePeriode::getUrl(),

@@ -151,8 +151,6 @@
         <x-filament::icon icon="heroicon-o-shield-check" />
         <span><strong>Accès sécurisé et fiable</strong><small>Vos données sont protégées selon les normes de sécurité les plus élevées.</small></span>
     </footer>
-
-    <x-global-loading-overlay />
 </div>
 
 

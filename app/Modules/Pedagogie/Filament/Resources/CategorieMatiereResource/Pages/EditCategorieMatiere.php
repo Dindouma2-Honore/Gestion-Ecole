@@ -3,15 +3,20 @@
 namespace App\Modules\Pedagogie\Filament\Resources\CategorieMatiereResource\Pages;
 
 use App\Modules\Pedagogie\Filament\Resources\CategorieMatiereResource;
-use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 class EditCategorieMatiere extends EditRecord
 {
     protected static string $resource = CategorieMatiereResource::class;
 
-    protected function getHeaderActions(): array
+    protected function mutateFormDataBeforeFill(array $data): array
     {
-        return [DeleteAction::make()];
+        return CategorieMatiereResource::recordData($data, $this->getRecord());
+    }
+
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        return CategorieMatiereResource::enregistrer($data, $record);
     }
 }

@@ -10,6 +10,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ManageUserPermissions extends Page
 {
@@ -21,11 +22,16 @@ class ManageUserPermissions extends Page
 
     protected static string|\UnitEnum|null $navigationGroup = 'Utilisateurs & accès';
 
-    protected static ?string $navigationLabel = 'Permissions utilisateurs';
+    protected static ?string $navigationLabel = 'Utilisateurs';
 
-    protected static ?string $title = 'Habilitations dynamiques — Utilisateurs';
+    protected static ?string $title = 'Habilitations des utilisateurs';
 
     protected static ?int $navigationSort = 17;
+
+    public function getSubheading(): ?string
+    {
+        return 'Matrice des habilitations dynamiques personnalisées par compte utilisateur.';
+    }
 
     public ?int $userSelectionne = null;
 
@@ -40,13 +46,17 @@ class ManageUserPermissions extends Page
         $this->moduleSelectionne = $this->moduleSelectionne === $categorie ? null : $categorie;
     }
 
+    public function selectionnerUser(int $userId): void
+    {
+        $this->userSelectionne = $userId;
+    }
+
     public static function canAccess(): bool
     {
         /** @var User|null $user */
         $user = Auth::user();
 
-        return $user?->hasAnyRole(['Fondateur', 'Admin', 'Administrateur', 'Super Admin']) === true
-            || $user?->can('gerer_habilitations') === true;
+        return $user?->hasAnyRole(['Fondateur', 'Admin', 'Administrateur', 'Super Admin']) === true;
     }
 
     public function mount(): void
@@ -54,16 +64,19 @@ class ManageUserPermissions extends Page
         $demande = request()->query('user');
         $this->userSelectionne = $demande !== null
             ? (int) $demande
-            : User::query()->where('statut', 'actif')->orderBy('name')->value('id');
+            : $this->personnelQuery()->orderBy('name')->value('id');
     }
 
     public function getUsersProperty(): Collection
     {
-        return User::query()
-            ->where('statut', 'actif')
-            ->whereDoesntHave('roles', fn ($q) => $q->where('name', 'Fondateur'))
+        return $this->personnelQuery()
             ->orderBy('name')
             ->get();
+    }
+
+    public function getUserCourantProperty(): ?User
+    {
+        return $this->userCourant();
     }
 
     public function getMatriceProperty(): Collection
@@ -149,8 +162,28 @@ class ManageUserPermissions extends Page
 
     private function userCourant(): ?User
     {
-        return $this->userSelectionne
-            ? User::query()->find($this->userSelectionne)
-            : null;
+        if ($this->userSelectionne) {
+            $user = User::query()->find($this->userSelectionne);
+            if ($user) {
+                return $user;
+            }
+        }
+
+        $premier = $this->personnelQuery()->orderBy('name')->first();
+        if ($premier) {
+            $this->userSelectionne = $premier->id;
+
+            return $premier;
+        }
+
+        return null;
+    }
+
+    private function personnelQuery()
+    {
+        return User::query()->where(function ($query): void {
+            $query->whereIn('id', DB::table('employes')->whereNotNull('user_id')->select('user_id'))
+                ->orWhere('facilg_legacy_id', 'like', 'utilisateur:%');
+        });
     }
 }

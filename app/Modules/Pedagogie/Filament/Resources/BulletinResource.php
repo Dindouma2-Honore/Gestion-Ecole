@@ -101,7 +101,6 @@ class BulletinResource extends Resource
                                 ->title('Bulletin généré')
                                 ->body("Moyenne générale : {$bulletin->moyenne_generale}/20 — Rang {$bulletin->rang}/{$bulletin->effectif_classe} — {$bulletin->mention}.")
                                 ->success()
-                                ->duration(6000)
                                 ->send();
                         } catch (\Throwable $e) {
                             Notification::make()
@@ -130,7 +129,6 @@ class BulletinResource extends Resource
                                 ->title('Bulletins générés')
                                 ->body("{$bulletins->count()} bulletin(s) généré(s) pour la classe.")
                                 ->success()
-                                ->duration(6000)
                                 ->send();
                         } catch (\Throwable $e) {
                             Notification::make()

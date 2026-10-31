@@ -2,8 +2,9 @@
 
 namespace App\Modules\RH\Filament\Resources\PrimeResource\Pages;
 
+use App\Filament\Support\AmbassadorsDesign;
 use App\Modules\RH\Filament\Resources\PrimeResource;
-use Filament\Actions;
+use App\Modules\RH\Filament\Support\RhActions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListPrimes extends ListRecords
@@ -13,7 +14,12 @@ class ListPrimes extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            RhActions::create()
+                ->label('Créer une prime')
+                ->modal(true)
+                ->modalHeading('Créer une prime')
+                ->modalWidth('none')->extraModalWindowAttributes(AmbassadorsDesign::goldenModalAttributes())
+                ->createAnother(false),
         ];
     }
 }

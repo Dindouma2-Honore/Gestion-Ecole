@@ -221,38 +221,19 @@
                             });
 
                             succeed(({ snapshot }) => {
-                                const mountedTableAction = snapshot?.memo?.mountedTableAction || snapshot?.memo?.data?.mountedTableAction;
-                                const mountedAction = snapshot?.memo?.mountedAction || snapshot?.memo?.data?.mountedAction;
-
-                                let errors = snapshot?.memo?.errors || {};
-                                let errorKeys = Object.keys(errors);
-
-                                if (errorKeys.length > 0) {
-                                    // Validation errors occurred! Show Error card!
-                                    this.pendingAction = false;
-                                    let firstMsg = errors[errorKeys[0]][0] || 'Veuillez vérifier les champs obligatoires.';
-                                    this.showError('Erreur de validation', firstMsg);
-                                } else if (mountedTableAction || mountedAction) {
-                                    // Modal just opened on screen! Reset pendingAction and hide loading!
-                                    this.pendingAction = false;
-                                    this.hide();
-                                } else if (this.isLoginSubmission) {
+                                const hasErrors = Boolean(snapshot?.memo?.errors && Object.keys(snapshot.memo.errors).length > 0);
+                                if (this.isLoginSubmission && !hasErrors) {
                                     this.showLoading();
-                                } else if (this.pendingAction && isActionMethodCall) {
-                                    // REAL action/validation method was submitted and succeeded!
-                                    const actionMeta = detectActionContent(calls);
-                                    this.pendingAction = false;
-                                    this.showSuccess(actionMeta.title, actionMeta.message);
                                 } else {
-                                    // Non-action update (sorting, filtering, opening menus). Silently hide!
                                     this.pendingAction = false;
+                                    this.isLoginSubmission = false;
                                     this.hide();
                                 }
                             });
 
                             fail(() => {
                                 this.pendingAction = false;
-                                this.showError('Échec de l’opération', 'Une erreur est survenue lors du traitement.');
+                                this.hide();
                             });
                         });
                     }
@@ -292,7 +273,7 @@
 
                     this.timer = setTimeout(() => {
                         this.show = false;
-                    }, 3500);
+                    }, 2000);
                 }, delay);
             },
 

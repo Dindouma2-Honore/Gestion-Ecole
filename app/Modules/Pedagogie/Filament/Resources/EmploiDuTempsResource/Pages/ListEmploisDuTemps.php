@@ -12,10 +12,15 @@ class ListEmploisDuTemps extends ListRecords
 {
     protected static string $resource = EmploiDuTempsResource::class;
 
+    protected function getHeaderWidgets(): array
+    {
+        return [\App\Modules\Pedagogie\Filament\Resources\EmploiDuTempsResource\Widgets\SyntheseClasseWidget::class];
+    }
+
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make()->label('Planifier un cours'),
+            Actions\CreateAction::make()->label('Enregistrer brouillon'),
         ];
     }
 }

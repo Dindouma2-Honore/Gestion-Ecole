@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RolesAndPermissionsSeeder::class,
+            ActivePermissionsRepairSeeder::class,
             AdminUserSeeder::class,
             HabilitationsSeeder::class,
             DocumentNumberingSeeder::class,
@@ -25,6 +26,7 @@ class DatabaseSeeder extends Seeder
 
         if (app()->environment('local')) {
             $this->call(LocalDevelopmentSeeder::class);
+            $this->call(PedagogieDemoSeeder::class);
         }
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Finances\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Models\User;
 use App\Modules\Finances\Filament\Resources\RubriqueDepenseResource\Pages;
 use App\Modules\Finances\Models\RubriqueDepense;
@@ -37,11 +38,11 @@ class RubriqueDepenseResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table->columns([
+        return RecordModal::configure($table->columns([
             TextColumn::make('nom')->searchable()->sortable(),
             IconColumn::make('active')->boolean(),
             TextColumn::make('depenses_count')->counts('depenses')->label('Dépenses'),
-        ]);
+        ]), static::class);
     }
 
     public static function canAccess(): bool

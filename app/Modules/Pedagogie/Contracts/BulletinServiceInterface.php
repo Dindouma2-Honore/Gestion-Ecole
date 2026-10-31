@@ -23,4 +23,26 @@ interface BulletinServiceInterface
     public function genererPourClasse(int $classeId, int $anneeScolaireId, ?int $periodeId = null): Collection;
 
     public function changerStatut(int $bulletinId, string $nouveauStatut): object;
+
+    /**
+     * Enregistre la décision officielle du conseil de classe pour un élève (admis, redouble, etc.).
+     */
+    public function enregistrerDecisionConseil(
+        int $eleveId,
+        int $classeId,
+        int $anneeScolaireId,
+        string $decision,
+        ?string $motif = null,
+        ?int $validePar = null
+    ): object;
+
+    /**
+     * Récupère la décision pédagogique du conseil pour un élève.
+     */
+    public function getDecisionConseil(int $eleveId, int $anneeScolaireId): ?object;
+
+    /**
+     * Récupère toutes les décisions pédagogiques pour une classe et une année scolaire.
+     */
+    public function getDecisionsClasse(int $classeId, int $anneeScolaireId): Collection;
 }

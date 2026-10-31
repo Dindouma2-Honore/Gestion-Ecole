@@ -4,20 +4,23 @@ declare(strict_types=1);
 
 namespace App\Modules\Scolarite\Filament\Resources\EleveResource\Pages;
 
-use App\Filament\Concerns\HasCardListLayout;
 use App\Modules\Scolarite\Filament\Resources\EleveResource;
+use App\Modules\Scolarite\Filament\Support\ScolariteActions;
+use App\Modules\Scolarite\Models\Eleve;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Schemas\Components\Tabs\Tab;
+use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Url;
 
 class ListEleves extends ListRecords
 {
-    use HasCardListLayout;
-
     protected static string $resource = EleveResource::class;
 
+    protected static ?string $title = 'Admissions';
+
     #[Url(as: 'affichage')]
-    public string $affichage = 'cartes';
+    public string $affichage = 'tableau';
 
     public function usesCardLayout(): bool
     {
@@ -42,10 +45,19 @@ class ListEleves extends ListRecords
                     ? 'heroicon-o-table-cells'
                     : 'heroicon-o-squares-2x2'
                 )
-                ->color('gray'),
+                ->color('gray')
+                ->action(fn (): mixed => $this->toggleLayout()),
 
-            Actions\CreateAction::make()
-                ->label('Nouvel élève'),
+            ScolariteActions::create()
+                ->label('Nouvelle admission'),
+        ];
+    }
+
+    protected function getEmptyStateActions(): array
+    {
+        return [
+            ScolariteActions::create()
+                ->label('Nouvelle admission'),
         ];
     }
 }

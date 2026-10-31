@@ -6,6 +6,7 @@ namespace App\Modules\RH\Observers;
 
 use App\Modules\RH\Exceptions\BulletinDejaValideException;
 use App\Modules\RH\Models\BulletinPaie;
+use App\Modules\RH\Models\Prime;
 
 class BulletinPaieObserver
 {
@@ -40,6 +41,12 @@ class BulletinPaieObserver
         if (in_array($bulletin->statut, ['valide', 'paye'], true)) {
             throw new BulletinDejaValideException((int) $bulletin->id);
         }
+
+        // Bulletin brouillon/calculé supprimé : ses primes ponctuelles redeviennent applicables.
+        Prime::query()
+            ->where('bulletin_paie_id', $bulletin->id)
+            ->where('statut', 'integree_paie')
+            ->update(['statut' => 'validee', 'bulletin_paie_id' => null]);
     }
 
     /**

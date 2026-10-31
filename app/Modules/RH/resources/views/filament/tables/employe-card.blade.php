@@ -21,5 +21,5 @@
         :label="$record->matricule ?: 'Sans matricule'"
         :title="$titre"
         :badge="$statut"
-    >{{ $record->poste ?: 'Poste non renseigné' }} · {{ $record->departement ?: 'Département non renseigné' }}</x-ambassadors-card>
+    >{{ $record->poste ?: 'Poste non renseigné' }}{{ $record->niveau?->name ? ' · '.$record->niveau->name : '' }}</x-ambassadors-card>
 </a>

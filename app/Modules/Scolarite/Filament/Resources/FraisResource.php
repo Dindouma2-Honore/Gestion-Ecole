@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Scolarite\Filament\Resources;
 
 use App\Modules\Scolarite\Filament\Resources\FraisResource\Pages;
+use App\Modules\Scolarite\Filament\Support\ScolariteActions;
 use App\Modules\Scolarite\Models\CategorieFrais;
 use App\Modules\Scolarite\Models\Frais;
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -26,9 +25,11 @@ class FraisResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-banknotes';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Scolarité';
+    protected static string|UnitEnum|null $navigationGroup = 'Frais scolaires';
 
     protected static ?string $navigationLabel = 'Frais';
+
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $modelLabel = 'frais';
 
@@ -71,6 +72,8 @@ class FraisResource extends Resource
 
     public static function table(Table $table): Table
     {
+        ScolariteActions::configureTable($table, 'edit');
+
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('nom')->label('Nom')->searchable()->sortable(),
@@ -91,8 +94,9 @@ class FraisResource extends Resource
                     ->color('gray')
                     ->visible(fn (Frais $record) => $record->utilise_grille_tarifaire)
                     ->url(fn (Frais $record) => GrilleTarifaireResource::getUrl('index', ['tableFilters[frais_id][value]' => $record->id])),
-                EditAction::make(),
-                DeleteAction::make(),
+                ScolariteActions::edit(),
+                ScolariteActions::view(),
+                ScolariteActions::delete(),
             ]);
     }
 

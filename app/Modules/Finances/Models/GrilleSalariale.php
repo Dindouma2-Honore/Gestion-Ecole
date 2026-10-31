@@ -27,6 +27,6 @@ class GrilleSalariale extends Model
 
     public function getCategorieNomAttribute(): string
     {
-        return DB::table('categories_personnel')->where('id', $this->categorie_personnel_id)->value('nom') ?? 'Non définie';
+        return DB::table('paliers_anciennete')->where('id', $this->palier_anciennete_id)->value('nom') ?? 'Non défini';
     }
 }

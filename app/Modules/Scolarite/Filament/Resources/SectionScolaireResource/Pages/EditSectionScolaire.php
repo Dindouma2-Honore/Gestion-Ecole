@@ -1,0 +1,17 @@
+<?php
+
+namespace App\Modules\Scolarite\Filament\Resources\SectionScolaireResource\Pages;
+
+use App\Modules\Scolarite\Filament\Resources\SectionScolaireResource;
+use Filament\Actions\DeleteAction;
+use Filament\Resources\Pages\EditRecord;
+
+class EditSectionScolaire extends EditRecord
+{
+    protected static string $resource = SectionScolaireResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [DeleteAction::make()];
+    }
+}

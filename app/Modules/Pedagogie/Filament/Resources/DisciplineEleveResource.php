@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Pedagogie\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Modules\Pedagogie\Filament\Resources\DisciplineEleveResource\Pages;
 use App\Modules\Pedagogie\Models\DisciplineEleve;
 use App\Modules\Scolarite\Contracts\ClasseServiceInterface;
@@ -50,13 +51,13 @@ class DisciplineEleveResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table->columns([
+        return RecordModal::configure($table->columns([
             Tables\Columns\TextColumn::make('date_incident')->label('Date')->date('d/m/Y')->sortable(),
             Tables\Columns\TextColumn::make('eleve_id')->label('Élève')->formatStateUsing(fn ($state) => (($e = app(EleveServiceInterface::class)->getEleve((int) $state)) ? trim(($e['nom'] ?? '').' '.($e['prenom'] ?? '')) : "#{$state}"))->searchable(),
             Tables\Columns\TextColumn::make('type_incident')->label('Incident')->searchable(),
             Tables\Columns\TextColumn::make('gravite')->badge(),
             Tables\Columns\IconColumn::make('confidentiel')->label('Confidentiel')->boolean(),
-        ])->actions([EditAction::make()]);
+        ])->actions([EditAction::make()]), static::class);
     }
 
     public static function getEloquentQuery(): Builder

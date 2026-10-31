@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace App\Modules\Logistique\Contracts;
+
 use Illuminate\Support\Collection;
 
 interface TransportServiceInterface

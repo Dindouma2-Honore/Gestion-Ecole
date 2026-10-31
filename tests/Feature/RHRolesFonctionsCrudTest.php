@@ -13,6 +13,7 @@ use App\Modules\RH\Filament\Resources\PosteAdministratifResource;
 use App\Modules\RH\Filament\Resources\PosteAdministratifResource\Pages\CreatePosteAdministratif;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -60,11 +61,34 @@ class RHRolesFonctionsCrudTest extends TestCase
             ->fillForm(['nom' => 'Personnel administratif', 'description' => 'Personnel non enseignant', 'actif' => true])
             ->call('create')
             ->assertHasNoFormErrors();
-        $this->assertDatabaseHas('categories_personnel', ['nom' => 'Personnel administratif', 'actif' => true]);
+        $this->assertDatabaseHas('categories_personnel', [
+            'nom' => 'Personnel administratif',
+            'actif' => true,
+        ]);
 
         $this->get(CategoriePersonnelResource::getUrl())
             ->assertSuccessful()
             ->assertSee('Personnel administratif')
             ->assertSee('Nouvelle catégorie');
+    }
+
+    public function test_free_categories_and_seniority_steps_have_distinct_rules(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $libre = \App\Modules\RH\Models\CategoriePersonnel::query()->create([
+            'nom' => 'Vacataire',
+            'description' => 'Personnel engagé à la vacation',
+            'actif' => true,
+        ]);
+
+        $this->assertDatabaseHas('categories_personnel', ['id' => $libre->id, 'nom' => 'Vacataire']);
+
+        $junior = \App\Modules\RH\Models\PalierAnciennete::query()->where('nom', 'Junior')->firstOrFail();
+        $junior->update(['description' => 'Premier palier mis à jour']);
+        $this->assertSame('Premier palier mis à jour', $junior->fresh()->description);
+
+        $this->expectException(ValidationException::class);
+        $junior->update(['anciennete_max_mois' => 30]);
     }
 }

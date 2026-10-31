@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Socle\Contracts;
 
+use App\Modules\Scolarite\Data\AcademicStructureItemDTO;
 use DateTimeInterface;
 
 interface ParametrageServiceContract
@@ -11,11 +12,11 @@ interface ParametrageServiceContract
     /** Retourne l'unique ligne de configuration de l'établissement */
     public function getConfigEtablissement(): object;
 
-    /** Retourne la liste ordonnée des niveaux d'enseignement */
+    /** @return array<int, AcademicStructureItemDTO> */
     public function getTousLesNiveaux(): array;
 
     /** Retourne un niveau, sans exposer son modèle Eloquent hors du module. */
-    public function getNiveau(int $id): ?object;
+    public function getNiveau(int $id): ?AcademicStructureItemDTO;
 
     /** Retourne un paramètre système typé ou la valeur par défaut. */
     public function getParametre(string $cle, mixed $defaut = null): mixed;

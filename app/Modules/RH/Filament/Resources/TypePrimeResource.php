@@ -2,6 +2,8 @@
 
 namespace App\Modules\RH\Filament\Resources;
 
+use App\Filament\Support\AmbassadorsDesign;
+use App\Modules\RH\Filament\Support\RhActions;
 use App\Modules\RH\Models\TypePrime;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -52,7 +54,9 @@ class TypePrimeResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        AmbassadorsDesign::configureTable($table, null);
+
+        return $table->recordActions([RhActions::edit()])
             ->columns([
                 TextColumn::make('code')->sortable()->searchable(),
                 TextColumn::make('libelle')->sortable()->searchable(),

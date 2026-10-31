@@ -4,7 +4,7 @@ namespace App\Modules\RH\Contracts;
 
 interface CongeServiceContract
 {
-    public function demanderConge(int $employeId, string $type, \DateTimeInterface $debut, \DateTimeInterface $fin, ?string $motif): object;
+    public function demanderConge(int $employeId, string $type, \DateTimeInterface $debut, \DateTimeInterface $fin, ?string $motif, ?int $justificatifDocumentId = null): object;
 
     public function approuver(int $congeId, int $validateurId, ?string $commentaire = null): void;
 

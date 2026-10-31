@@ -3,7 +3,7 @@
 namespace App\Modules\RH\Filament\Resources\InspectionResource\Pages;
 
 use App\Modules\RH\Filament\Resources\InspectionResource;
-use Filament\Actions;
+use App\Modules\RH\Filament\Support\RhActions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListInspections extends ListRecords
@@ -13,7 +13,7 @@ class ListInspections extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            RhActions::create(),
         ];
     }
 }

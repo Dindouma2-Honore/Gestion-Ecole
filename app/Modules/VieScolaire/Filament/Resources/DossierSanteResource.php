@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace App\Modules\VieScolaire\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Modules\VieScolaire\Models\DossierSante;
 use BackedEnum;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 use UnitEnum;
 
 /**
@@ -41,21 +44,22 @@ class DossierSanteResource extends Resource
 
     protected static ?string $modelLabel = 'dossier santé';
 
+    protected static bool $shouldRegisterNavigation = false;
+
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
-                TextInput::make('eleve_id')
-                    ->label('ID élève')
-                    ->numeric()
-                    ->required()
-                    ->unique(ignoreRecord: true)
-                    ->helperText('En attendant un Select alimenté par EleveServiceInterface (Scolarité).'),
+                Select::make('eleve_id')->label('Élève')->searchable()->preload()->options(fn () => DB::table('eleves')->whereNull('deleted_at')->orderBy('nom')->get()->mapWithKeys(fn ($e) => [$e->id => trim("{$e->nom} {$e->prenom}")." — {$e->matricule_permanent}"])->all())->required()->unique(ignoreRecord: true),
 
                 TextInput::make('groupe_sanguin')->label('Groupe sanguin')->maxLength(5),
                 Textarea::make('allergies')->label('Allergies'),
                 Textarea::make('maladies_chroniques')->label('Maladies chroniques'),
+                Textarea::make('antecedents_medicaux')->label('Antécédents médicaux'),
+                Textarea::make('traitements_connus')->label('Traitements connus'),
                 Textarea::make('medicaments_autorises')->label('Médicaments autorisés'),
+                Textarea::make('restrictions')->label('Restrictions'),
+                Textarea::make('informations_importantes')->label('Informations importantes'),
                 TextInput::make('contact_urgence_nom')->label('Contact urgence — nom')->required(),
                 TextInput::make('contact_urgence_telephone')->label('Contact urgence — téléphone')->tel()->required(),
                 TextInput::make('medecin_traitant')->label('Médecin traitant'),
@@ -64,16 +68,16 @@ class DossierSanteResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordModal::configure($table
             ->columns([
-                Tables\Columns\TextColumn::make('eleve_id')->label('Élève (ID)'),
+                Tables\Columns\TextColumn::make('eleve_id')->label('Élève')->formatStateUsing(fn ($state) => optional(DB::table('eleves')->find($state))->nom ?? '—'),
                 Tables\Columns\TextColumn::make('groupe_sanguin')->label('Groupe sanguin')->placeholder('—'),
                 Tables\Columns\TextColumn::make('allergies')->label('Allergies')->limit(40)->placeholder('—'),
                 Tables\Columns\TextColumn::make('contact_urgence_nom')->label('Contact urgence'),
             ])
             ->actions([
                 EditAction::make(),
-            ]);
+            ])->defaultPaginationPageOption(5), static::class);
     }
 
     public static function getPages(): array

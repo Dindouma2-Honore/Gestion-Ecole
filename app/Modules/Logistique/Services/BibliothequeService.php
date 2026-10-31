@@ -27,7 +27,7 @@ class BibliothequeService implements BibliothequeServiceInterface
             throw new ExemplaireIndisponibleException($exemplaireId);
         }
 
-        $exemplaire->update(['disponible' => false]);
+        $exemplaire->update(['disponible' => false, 'statut' => 'emprunte']);
 
         return Emprunt::create([
             'exemplaire_id' => $exemplaireId,
@@ -38,29 +38,36 @@ class BibliothequeService implements BibliothequeServiceInterface
         ]);
     }
 
-   public function retourner(int $empruntId, string $etatRetour = 'bon'): object
-{
-    $emprunt = Emprunt::findOrFail($empruntId);
+    public function retourner(int $empruntId, string $etatRetour = 'bon'): object
+    {
+        $emprunt = Emprunt::findOrFail($empruntId);
 
-    $penalite = 0;
-    if (now()->gt($emprunt->date_retour_prevue)) {
-        // Carbon 3 : diffInDays() n'est plus absolu par défaut (le signe
-        // indique le sens temporel) — absolute: true rétablit l'ancien
-        // comportement, sinon un retard donne une pénalité négative.
-        $joursRetard = (int) now()->diffInDays($emprunt->date_retour_prevue, absolute: true);
-        $tarifJour = $this->parametrage->getParametre('penalite_bibliotheque_par_jour', 100);
-        $penalite = $joursRetard * $tarifJour;
+        $penalite = 0;
+        if (now()->gt($emprunt->date_retour_prevue)) {
+            // Carbon 3 : diffInDays() n'est plus absolu par défaut (le signe
+            // indique le sens temporel) — absolute: true rétablit l'ancien
+            // comportement, sinon un retard donne une pénalité négative.
+            $joursRetard = (int) now()->diffInDays($emprunt->date_retour_prevue, absolute: true);
+            $tarifJour = $this->parametrage->getParametre('penalite_bibliotheque_par_jour', 100);
+            $penalite = $joursRetard * $tarifJour;
+        }
+
+        $emprunt->update(['date_retour_reelle' => now(), 'penalite' => $penalite]);
+
+        $statut = match ($etatRetour) {
+            'perdu' => 'perdu',
+            'abime' => 'endommage',
+            default => 'disponible',
+        };
+
+        ExemplaireLivre::where('id', $emprunt->exemplaire_id)->update([
+            'disponible' => $statut === 'disponible',
+            'etat' => $etatRetour,
+            'statut' => $statut,
+        ]);
+
+        return $emprunt;
     }
-
-    $emprunt->update(['date_retour_reelle' => now(), 'penalite' => $penalite]);
-
-    ExemplaireLivre::where('id', $emprunt->exemplaire_id)->update([
-        'disponible' => true,
-        'etat' => $etatRetour,
-    ]);
-
-    return $emprunt;
-}
 
     public function reserver(int $livreId, Model $emprunteur): object
     {

@@ -12,9 +12,9 @@ class Evenement extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'titre', 'description', 'date_debut', 'date_fin', 'lieu',
-        'budget_prevu', 'necessite_transport', 'necessite_autorisation_parentale',
-        'responsable_id', 'statut',
+        'reference', 'titre', 'type', 'description', 'date_debut', 'date_fin', 'lieu',
+        'salle_id', 'budget_prevu', 'necessite_transport', 'vehicule_id', 'materiel_requis',
+        'necessite_autorisation_parentale', 'responsable_id', 'statut',
     ];
 
     protected $casts = [

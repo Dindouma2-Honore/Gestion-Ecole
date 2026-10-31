@@ -8,11 +8,10 @@ use App\Filament\Support\ModuleAccess;
 use App\Filament\Support\ModuleCatalog;
 use App\Http\Middleware\EnsureModuleAccess;
 use App\Models\User;
-use App\Modules\RH\Filament\Resources\EmployeResource;
 use App\Modules\RH\Filament\Resources\BulletinPaieResource;
+use App\Modules\RH\Filament\Resources\EmployeResource;
 use App\Modules\Socle\Contracts\HabilitationServiceContract;
 use App\Modules\Socle\Filament\Pages\ManageHabilitations;
-use App\Modules\Socle\Models\Fonctionnalite;
 use Database\Seeders\HabilitationsSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -31,6 +30,50 @@ class ModulePermissionsByRoleTest extends TestCase
         parent::setUp();
         $this->seed(RolesAndPermissionsSeeder::class);
         $this->seed(HabilitationsSeeder::class);
+    }
+
+    public function test_matrice_habilitations_affiche_uniquement_les_menus_courants_des_modules(): void
+    {
+        $codes = app(HabilitationServiceContract::class)
+            ->getMatricePourRole('Directeur')
+            ->pluck('code');
+
+        foreach ([
+            'socle.utilisateurs',
+            'module.rh',
+            'socle.roles',
+            'socle.parametres',
+            'socle.audit',
+            'rh.recrutement',
+            'rh.employes',
+            'rh.contrats',
+            'scolarite.eleves',
+            'scolarite.inscriptions',
+            'pedagogie.enseignements',
+            'finances.caisse',
+            'finances.grilles_salariales',
+            'assiduite.dashboard',
+            'viescolaire.visiteurs',
+            'logistique.equipements',
+            'module.technique',
+        ] as $code) {
+            $this->assertTrue($codes->contains($code), "Le menu {$code} doit rester visible dans les habilitations.");
+        }
+
+        foreach ([
+            'socle.documents',
+            'socle.courriers',
+            'socle.organisation',
+            'socle.workflows',
+            'rh.formation',
+            'rh.discipline',
+            'rh.pointage',
+            'finances.factures',
+            'finances.budget',
+            'finances.recouvrement',
+        ] as $code) {
+            $this->assertFalse($codes->contains($code), "L'ancien menu {$code} ne doit plus être affiché dans les habilitations.");
+        }
     }
 
     public function test_administrateur_peut_acceder_a_la_page_des_habilitations_et_voir_les_roles(): void
@@ -57,6 +100,9 @@ class ModulePermissionsByRoleTest extends TestCase
 
         $directeur = User::factory()->create(['statut' => 'actif']);
         $directeur->assignRole('Directeur');
+
+        $this->actingAs($fondateur);
+        app(HabilitationServiceContract::class)->activerModulePourRole('Directeur', 'module.rh');
 
         // Au départ, le Directeur voit le module RH sur la page d'accueil et accède aux composants
         $this->actingAs($directeur);
@@ -104,8 +150,9 @@ class ModulePermissionsByRoleTest extends TestCase
         $comptable = User::factory()->create(['statut' => 'actif']);
         $comptable->assignRole('Comptable');
 
-        // Désactiver uniquement 'rh.paie' pour le Comptable
+        // Activer d'abord module RH puis désactiver uniquement 'rh.paie' pour le Comptable
         $this->actingAs($fondateur);
+        app(HabilitationServiceContract::class)->activerModulePourRole('Comptable', 'module.rh');
         app(HabilitationServiceContract::class)->desactiverModulePourRole(
             'Comptable',
             'rh.paie',

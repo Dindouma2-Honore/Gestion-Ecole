@@ -2,6 +2,8 @@
 
 namespace App\Modules\RH\Filament\Resources;
 
+use App\Filament\Support\AmbassadorsDesign;
+use App\Modules\RH\Filament\Support\RhActions;
 use App\Modules\RH\Models\Prime;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -61,7 +63,9 @@ class PrimeResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        AmbassadorsDesign::configureTable($table, null);
+
+        return $table->recordActions([RhActions::edit()])
             ->columns([
                 TextColumn::make('employe.nom_complet')->label('Employé')->sortable()->searchable(),
                 TextColumn::make('typePrime.libelle')->label('Type Prime')->sortable(),

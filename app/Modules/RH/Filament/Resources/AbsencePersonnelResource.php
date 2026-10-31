@@ -2,7 +2,10 @@
 
 namespace App\Modules\RH\Filament\Resources;
 
+use App\Filament\Support\AmbassadorsDesign;
+use App\Modules\RH\Filament\Support\RhActions;
 use App\Modules\RH\Models\AbsencePersonnel;
+use App\Modules\RH\Models\Employe;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -23,12 +26,24 @@ class AbsencePersonnelResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema->components([Select::make('employe_id')->relationship('employe', 'nom')->required()->searchable(), DatePicker::make('date_debut')->required(), DatePicker::make('date_fin')->required()->afterOrEqual('date_debut'), Select::make('type')->options(['absence_justifiee' => 'Absence justifiée', 'absence_non_justifiee' => 'Absence non justifiée', 'conge' => 'Congé', 'permission' => 'Permission'])->required(), Textarea::make('motif')->required(), Select::make('statut')->options(['en_attente' => 'En attente', 'validee' => 'Validée', 'rejetee' => 'Rejetée'])->default('en_attente')->required()]);
+        return $schema->components([
+            Select::make('employe_id')->label('Personnel')
+                ->options(fn (): array => Employe::query()->where('statut', 'actif')->orderBy('nom')->orderBy('prenom')->get()->mapWithKeys(fn (Employe $employe): array => [$employe->id => $employe->nom_complet])->all())
+                ->searchable()->preload()->required(),
+            DatePicker::make('date_debut')->required(),
+            DatePicker::make('date_fin')->required()->afterOrEqual('date_debut'),
+            Select::make('type')->options(['absence_justifiee' => 'Absence justifiée', 'absence_non_justifiee' => 'Absence non justifiée', 'conge' => 'Congé', 'permission' => 'Permission'])->required(),
+            Textarea::make('motif')->required(),
+            Select::make('statut')->options(['en_attente' => 'En attente', 'validee' => 'Validée', 'rejetee' => 'Rejetée'])->default('en_attente')->required(),
+        ]);
     }
 
     public static function table(Table $table): Table
     {
-        return $table->columns([TextColumn::make('employe.nom_complet')->label('Personnel')->searchable(), TextColumn::make('type')->badge(), TextColumn::make('date_debut')->date(), TextColumn::make('date_fin')->date(), TextColumn::make('statut')->badge()]);
+        AmbassadorsDesign::configureTable($table, null);
+
+        return $table->columns([TextColumn::make('employe.nom_complet')->label('Personnel')->searchable(), TextColumn::make('type')->badge(), TextColumn::make('date_debut')->date(), TextColumn::make('date_fin')->date(), TextColumn::make('statut')->badge()])
+            ->recordActions([RhActions::edit()->label('Modifier')]);
     }
 
     public static function getPages(): array

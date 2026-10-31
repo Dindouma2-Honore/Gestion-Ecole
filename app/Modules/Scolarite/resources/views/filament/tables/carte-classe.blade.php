@@ -1,11 +1,14 @@
 @php
     /** @var \App\Modules\Scolarite\Models\Classe $record */
     $record = $getRecord();
-    $effectif = $record->inscriptions()->whereIn('statut', ['en_attente_versement', 'active'])->count();
+    $effectif = $record->inscriptions()
+        ->where('annee_scolaire_id', $record->annee_scolaire_id)
+        ->whereIn('statut', ['active', 'validee'])
+        ->count();
     $label = 'Niveau #'.$record->niveau_id.' · Année #'.$record->annee_scolaire_id;
     $badge = $effectif.'/'.$record->capacite_max;
 @endphp
-<a href="{{ \App\Modules\Scolarite\Filament\Resources\ClasseResource::getUrl('edit', ['record' => $record]) }}" class="block">
+<a href="{{ \App\Modules\Scolarite\Filament\Resources\ClasseResource::getUrl('view', ['record' => $record]) }}" class="block">
     <x-ambassadors-card
         icon="heroicon-o-building-library"
         :label="$label"

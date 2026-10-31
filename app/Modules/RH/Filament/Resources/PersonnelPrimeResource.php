@@ -2,6 +2,8 @@
 
 namespace App\Modules\RH\Filament\Resources;
 
+use App\Filament\Support\AmbassadorsDesign;
+use App\Modules\RH\Filament\Support\RhActions;
 use App\Modules\RH\Models\PersonnelPrime;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -37,13 +39,15 @@ class PersonnelPrimeResource extends Resource
 
     public static function table(Table $table): Table
     {
+        AmbassadorsDesign::configureTable($table, null);
+
         return $table->columns([
             TextColumn::make('employe.nom_complet')->label('Personnel')->searchable(),
             TextColumn::make('typePrime.libelle')->label('Prime'),
             TextColumn::make('typePrime.mode_calcul')->label('Calcul')->badge(),
             TextColumn::make('valeur_override')->label('Surcharge'),
             TextColumn::make('date_attribution')->date(), TextColumn::make('date_fin')->date(), IconColumn::make('actif')->boolean(),
-        ]);
+        ])->recordActions([RhActions::edit()->label('Modifier')]);
     }
 
     public static function getPages(): array

@@ -30,11 +30,45 @@ class ParentTuteurService implements ParentTuteurServiceInterface
 
     public function creer(array $donnees): array
     {
+        $nom = trim((string) ($donnees['nom'] ?? ''));
+        $prenom = trim((string) ($donnees['prenom'] ?? ''));
+        $telephone = trim((string) ($donnees['telephone'] ?? ''));
+
+        $existant = null;
+        if ($nom !== '' && ! in_array(mb_strtolower($nom), ['tuteur à compléter', 'tuteur a completer', 'tuteur', 'parent', 'inconnu'], true)) {
+            $existant = ParentTuteur::query()
+                ->whereRaw('LOWER(TRIM(nom)) = ?', [mb_strtolower($nom)])
+                ->when($prenom !== '', fn ($q) => $q->whereRaw('LOWER(TRIM(prenom)) = ?', [mb_strtolower($prenom)]))
+                ->first();
+        }
+
+        if (! $existant && $telephone !== '') {
+            $existant = ParentTuteur::where('telephone', $telephone)->first();
+        }
+
+        if ($existant) {
+            $updates = [];
+            if ($telephone !== '' && blank($existant->telephone)) {
+                $updates['telephone'] = $telephone;
+            }
+            if (! empty($donnees['email']) && blank($existant->email)) {
+                $updates['email'] = $donnees['email'];
+            }
+            if (! empty($donnees['profession']) && blank($existant->profession)) {
+                $updates['profession'] = $donnees['profession'];
+            }
+            if (! empty($updates)) {
+                $existant->update($updates);
+            }
+
+            return $existant->fresh()->toArray();
+        }
+
         $parent = ParentTuteur::create([
-            'nom' => $donnees['nom'],
-            'prenom' => $donnees['prenom'],
+            'nom' => $nom,
+            'prenom' => $prenom,
             'profession' => $donnees['profession'] ?? null,
-            'telephone' => $donnees['telephone'] ?? null,
+            'telephone' => $telephone ?: null,
             'email' => $donnees['email'] ?? null,
         ]);
 

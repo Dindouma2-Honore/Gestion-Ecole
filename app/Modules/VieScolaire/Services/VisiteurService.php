@@ -44,15 +44,15 @@ class VisiteurService implements VisiteurServiceInterface
     {
         // Réutilise directement le contrat Scolarité déjà exposé pour G.56 —
         // pas de duplication de la donnée d'autorisation.
-      $personnesAutorisees = collect($this->parent->getPersonnesAutoriseesRecuperer($eleveId));
-    $nomVisiteurNormalise = strtolower(trim($nomVisiteur));
+        $personnesAutorisees = collect($this->parent->getPersonnesAutoriseesRecuperer($eleveId));
+        $nomVisiteurNormalise = strtolower(trim($nomVisiteur));
 
-    return $personnesAutorisees->contains(function (array $p) use ($nomVisiteurNormalise) {
-        $nomPrenom = strtolower("{$p['nom']} {$p['prenom']}");
-        $prenomNom = strtolower("{$p['prenom']} {$p['nom']}");
+        return $personnesAutorisees->contains(function (array $p) use ($nomVisiteurNormalise) {
+            $nomPrenom = strtolower("{$p['nom']} {$p['prenom']}");
+            $prenomNom = strtolower("{$p['prenom']} {$p['nom']}");
 
-        return $nomVisiteurNormalise === $nomPrenom || $nomVisiteurNormalise === $prenomNom;
-    });
+            return $nomVisiteurNormalise === $nomPrenom || $nomVisiteurNormalise === $prenomNom;
+        });
         // Note : comparaison par nom fragile (homonymes possibles) — en
         // production, préférer une vérification par pièce d'identité ou
         // par badge parent plutôt que le nom seul. À discuter avec Joel.

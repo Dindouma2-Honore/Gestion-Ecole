@@ -2,6 +2,7 @@
 
 namespace App\Modules\Scolarite\Filament\Resources;
 
+use App\Modules\Scolarite\Filament\Support\ScolariteActions;
 use App\Modules\Scolarite\Models\TypeDocumentEleve;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -19,7 +20,9 @@ class TypeDocumentEleveResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Scolarité';
 
-    protected static ?string $modelLabel = 'Type de document élève';
+    protected static ?string $navigationLabel = 'Documents élèves';
+
+    protected static ?int $navigationSort = 7;
 
     public static function canAccess(): bool
     {
@@ -33,7 +36,18 @@ class TypeDocumentEleveResource extends Resource
 
     public static function table(Table $t): Table
     {
-        return $t->columns([TextColumn::make('code')->searchable(), TextColumn::make('nom')->searchable(), IconColumn::make('obligatoire')->boolean(), IconColumn::make('actif')->boolean()]);
+        ScolariteActions::configureTable($t, 'edit');
+
+        return $t->columns([
+            TextColumn::make('code')->searchable(),
+            TextColumn::make('nom')->searchable(),
+            IconColumn::make('obligatoire')->boolean(),
+            IconColumn::make('actif')->boolean(),
+        ])->actions([
+            ScolariteActions::edit(),
+            ScolariteActions::view(),
+            ScolariteActions::delete(),
+        ]);
     }
 
     public static function getPages(): array

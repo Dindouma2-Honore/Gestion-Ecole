@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('reclamations')) {
+        if (! Schema::hasTable('reclamations')) {
             Schema::create('reclamations', function (Blueprint $table) {
                 $table->id();
                 $table->enum('type', ['reclamation_parent', 'incident_scolaire', 'plainte']);
@@ -25,7 +25,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('reclamation_historique_statuts')) {
+        if (! Schema::hasTable('reclamation_historique_statuts')) {
             Schema::create('reclamation_historique_statuts', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('reclamation_id')->constrained('reclamations')->cascadeOnDelete();

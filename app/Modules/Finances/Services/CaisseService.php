@@ -8,8 +8,10 @@ use App\Modules\Finances\Contracts\CaisseServiceContract;
 use App\Modules\Finances\Exceptions\SessionCaisseDejaOuverteException;
 use App\Modules\Finances\Exceptions\SessionCaisseIntrouvableException;
 use App\Modules\Finances\Models\MouvementCaisse;
+use App\Modules\Finances\Models\Paiement;
 use App\Modules\Finances\Models\SessionCaisse;
 use App\Modules\Socle\Contracts\AuditServiceContract;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +26,7 @@ class CaisseService implements CaisseServiceContract
     {
         $date = now()->format('Y-m-d');
 
-        if (SessionCaisse::whereDate('date_session', $date)->exists()) {
+        if (SessionCaisse::where('statut', 'ouverte')->exists() || SessionCaisse::whereDate('date_session', $date)->exists()) {
             throw new SessionCaisseDejaOuverteException($date);
         }
 
@@ -38,6 +40,10 @@ class CaisseService implements CaisseServiceContract
 
     public function garantirSessionOuverte(): object
     {
+        if ($session = SessionCaisse::query()->where('statut', 'ouverte')->oldest('date_session')->oldest('id')->first()) {
+            return $session;
+        }
+
         $session = SessionCaisse::query()->whereDate('date_session', now()->toDateString())->first();
         if ($session !== null) {
             return $session;
@@ -50,8 +56,7 @@ class CaisseService implements CaisseServiceContract
             ->first();
         $soldeReporte = $sessionPrecedente ? $this->soldeFinal($sessionPrecedente) : 0.0;
 
-        return SessionCaisse::create([
-            'date_session' => now()->toDateString(),
+        return SessionCaisse::firstOrCreate(['date_session' => now()->toDateString()], [
             'solde_ouverture' => $soldeReporte,
             'statut' => 'ouverte',
             'ouverte_par' => Auth::id(),
@@ -64,12 +69,10 @@ class CaisseService implements CaisseServiceContract
             return round((float) $session->solde_cloture_reel, 2);
         }
 
-        $encaissements = (float) MouvementCaisse::query()
-            ->where('session_caisse_id', $session->id)
+        $encaissements = (float) $this->mouvementsEspeces($session->id)
             ->where('type', 'encaissement')
             ->sum('montant');
-        $decaissements = (float) MouvementCaisse::query()
-            ->where('session_caisse_id', $session->id)
+        $decaissements = (float) $this->mouvementsEspeces($session->id)
             ->where('type', 'decaissement')
             ->sum('montant');
 
@@ -78,28 +81,30 @@ class CaisseService implements CaisseServiceContract
 
     public function enregistrerMouvement(string $type, float $montant, ?Model $source = null, ?string $justificatif = null, ?string $rubrique = null, ?string $moduleOrigine = null, ?string $sousModule = null): object
     {
-        $session = $this->getSessionOuverte();
+        return DB::transaction(function () use ($type, $montant, $source, $justificatif, $rubrique, $moduleOrigine, $sousModule): MouvementCaisse {
+            $session = $this->getSessionOuverte();
 
-        return MouvementCaisse::create([
-            'session_caisse_id' => $session->id,
-            'type' => $type,
-            'rubrique' => $rubrique ?? 'Non classé',
-            'montant' => $montant,
-            'source_type' => $source?->getMorphClass(),
-            'source_id' => $source?->getKey(),
-            'module_origine' => $moduleOrigine,
-            'sous_module' => $sousModule,
-            'reference_type' => $source ? class_basename($source) : null,
-            'reference_id' => $source?->getKey(),
-            'justificatif' => $justificatif,
-        ]);
+            return MouvementCaisse::create([
+                'session_caisse_id' => $session->id,
+                'type' => $type,
+                'rubrique' => $rubrique ?? 'Non classé',
+                'montant' => $montant,
+                'source_type' => $source?->getMorphClass(),
+                'source_id' => $source?->getKey(),
+                'module_origine' => $moduleOrigine,
+                'sous_module' => $sousModule,
+                'reference_type' => $source ? class_basename($source) : null,
+                'reference_id' => $source?->getKey(),
+                'justificatif' => $justificatif,
+            ]);
+        });
     }
 
     public function cloturerSession(float $soldeReel): object
     {
         return DB::transaction(function () use ($soldeReel): SessionCaisse {
-            $session = $this->getSessionOuverte();
-            $soldeTheorique = $this->getSoldeTheoriqueActuel();
+            $session = $this->getSessionOuverte(false);
+            $soldeTheorique = $this->soldeFinal($session);
             $ecart = round($soldeReel - $soldeTheorique, 2);
 
             $session->update([
@@ -126,14 +131,20 @@ class CaisseService implements CaisseServiceContract
 
     public function getSoldeTheoriqueActuel(): float
     {
-        $session = $this->getSessionOuverte();
+        $session = $this->getSessionOuverte(false);
 
-        $encaissements = MouvementCaisse::where('session_caisse_id', $session->id)
-            ->where('type', 'encaissement')->sum('montant');
-        $decaissements = MouvementCaisse::where('session_caisse_id', $session->id)
-            ->where('type', 'decaissement')->sum('montant');
+        return $this->soldeFinal($session);
+    }
 
-        return round((float) $session->solde_ouverture + (float) $encaissements - (float) $decaissements, 2);
+    private function mouvementsEspeces(int $sessionId): Builder
+    {
+        return MouvementCaisse::query()->where('session_caisse_id', $sessionId)
+            ->whereNotExists(function (\Illuminate\Database\Query\Builder $query): void {
+                $query->selectRaw('1')->from('paiements')
+                    ->whereColumn('paiements.id', 'mouvements_caisse.source_id')
+                    ->where('mouvements_caisse.source_type', (new Paiement)->getMorphClass())
+                    ->whereIn('paiements.mode', ['bancaire', 'mobile_money']);
+            });
     }
 
     public function getBilanParRubrique(int $sessionId): array
@@ -155,10 +166,20 @@ class CaisseService implements CaisseServiceContract
         ];
     }
 
-    private function getSessionOuverte(): SessionCaisse
+    private function getSessionOuverte(bool $ouvrirSiAbsente = true): SessionCaisse
     {
-        return SessionCaisse::whereDate('date_session', now()->toDateString())->where('statut', 'ouverte')->first()
-            ?? (($session = $this->garantirSessionOuverte()) && $session->statut === 'ouverte' ? $session : null)
-            ?? throw new SessionCaisseIntrouvableException;
+        $session = SessionCaisse::query()->where('statut', 'ouverte')
+            ->oldest('date_session')->oldest('id')->lockForUpdate()->first();
+        if ($session) {
+            return $session;
+        }
+        if ($ouvrirSiAbsente) {
+            $candidate = $this->garantirSessionOuverte();
+            $session = SessionCaisse::query()->where('statut', 'ouverte')->lockForUpdate()->find($candidate->id);
+            if ($session) {
+                return $session;
+            }
+        }
+        throw new SessionCaisseIntrouvableException;
     }
 }

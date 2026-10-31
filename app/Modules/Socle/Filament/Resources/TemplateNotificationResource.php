@@ -21,7 +21,12 @@ class TemplateNotificationResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-bell';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Workflows & validations';
+    protected static string|\UnitEnum|null $navigationGroup = 'Configuration système';
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->hasRole('Fondateur') === true;
+    }
 
     protected static ?string $modelLabel = 'Modèle de notification';
 

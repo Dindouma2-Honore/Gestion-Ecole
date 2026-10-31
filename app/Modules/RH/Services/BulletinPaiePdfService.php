@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\RH\Services;
 
 use App\Modules\RH\Models\BulletinPaie;
+use App\Support\SafeFilename;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Response;
 
@@ -22,7 +23,7 @@ class BulletinPaiePdfService
     public function telecharger(BulletinPaie $bulletin): Response
     {
         $pdf = $this->mefientPdf($bulletin);
-        $nomFichier = "bulletin-paie-{$bulletin->employe?->matricule}-{$bulletin->mois}-{$bulletin->annee}.pdf";
+        $nomFichier = SafeFilename::make("bulletin-paie-{$bulletin->employe?->matricule}-{$bulletin->mois}-{$bulletin->annee}.pdf");
 
         return response($pdf->output(), 200, [
             'Content-Type' => 'application/pdf',
@@ -33,7 +34,7 @@ class BulletinPaiePdfService
     public function imprimer(BulletinPaie $bulletin): Response
     {
         $pdf = $this->mefientPdf($bulletin);
-        $nomFichier = "bulletin-paie-{$bulletin->employe?->matricule}-{$bulletin->mois}-{$bulletin->annee}.pdf";
+        $nomFichier = SafeFilename::make("bulletin-paie-{$bulletin->employe?->matricule}-{$bulletin->mois}-{$bulletin->annee}.pdf");
 
         return response($pdf->output(), 200, [
             'Content-Type' => 'application/pdf',

@@ -3,6 +3,8 @@
 Ce document explique comment récupérer, démarrer et modifier Ambassadors sans
 enfreindre les frontières entre modules.
 
+Pour le travail Linux/Mac, suivre en priorité le [workflow partagé](developpement-parallele.md). La branche d’intégration est `develop` ; les branches `main` et `production` sont réservées aux publications décidées séparément.
+
 ## 1. Environnement requis
 
 - Git.
@@ -20,8 +22,8 @@ minimum et utilise Laravel 13.17, Filament 5.7, MySQL 8.4 et Vite 8.
 ```bash
 git clone git@github.com:Joelo001/ambassadors-systeme.git
 cd ambassadors-systeme
-git switch main
-git pull --ff-only origin main
+git switch --track origin/develop
+git pull --ff-only origin develop
 ```
 
 Si l’accès SSH GitHub n’est pas encore configuré :
@@ -148,8 +150,8 @@ passe initial `password`. Il est strictement réservé au développement.
 Avant de commencer une nouvelle tâche :
 
 ```bash
-git switch main
-git pull --ff-only origin main
+git switch --track origin/develop
+git pull --ff-only origin develop
 git switch -c devX/nom-court-de-la-tache
 ```
 

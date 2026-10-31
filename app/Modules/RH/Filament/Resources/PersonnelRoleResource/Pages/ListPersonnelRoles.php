@@ -6,8 +6,8 @@ namespace App\Modules\RH\Filament\Resources\PersonnelRoleResource\Pages;
 
 use App\Modules\RH\Filament\Resources\EmployeResource;
 use App\Modules\RH\Filament\Resources\PersonnelRoleResource;
+use App\Modules\RH\Filament\Support\RhActions;
 use Filament\Actions\Action;
-use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListPersonnelRoles extends ListRecords
@@ -18,7 +18,7 @@ class ListPersonnelRoles extends ListRecords
     {
         return [
             Action::make('personnel')->label('Retour au personnel')->icon('heroicon-o-arrow-left')->color('gray')->url(EmployeResource::getUrl()),
-            CreateAction::make()->label('Nouveau rôle'),
+            RhActions::create()->label('Nouveau rôle'),
         ];
     }
 }

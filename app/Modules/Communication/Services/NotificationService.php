@@ -10,7 +10,6 @@ use App\Modules\Communication\Models\NotificationEnvoyee;
 use App\Modules\Socle\Contracts\ParametrageServiceContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class NotificationService implements NotificationServiceContract
@@ -73,6 +72,7 @@ class NotificationService implements NotificationServiceContract
         foreach ($enAttente as $item) {
             if (! $item->notification) {
                 $item->delete();
+
                 continue;
             }
 
@@ -144,42 +144,14 @@ class NotificationService implements NotificationServiceContract
         }
 
         $donneesStr = collect($donnees)->map(fn ($val, $key) => "{$key}: {$val}")->implode(', ');
+
         return "[Notification {$code}] {$donneesStr}";
     }
 
     private function envoyerWhatsapp(object $notification): void
     {
-        $token = config('services.whatsapp.token');
-        $phoneId = config('services.whatsapp.phone_id');
-        $apiVersion = config('services.whatsapp.api_version', 'v25.0');
-
-        if (! $token || ! $phoneId) {
-            throw new \RuntimeException('WhatsApp API non configurée.');
-        }
-
-        $recipient = preg_replace('/\D+/', '', (string) $notification->destinataire_contact);
-
-        if (! is_string($recipient) || $recipient === '') {
-            throw new \InvalidArgumentException('Numéro WhatsApp destinataire invalide.');
-        }
-
-        $response = Http::withToken($token)
-            ->post("https://graph.facebook.com/{$apiVersion}/{$phoneId}/messages", [
-                'messaging_product' => 'whatsapp',
-                'to' => $recipient,
-                'type' => 'text',
-                'text' => ['body' => $notification->contenu_final],
-            ]);
-
-        Log::info('Réponse API WhatsApp', [
-            'status' => $response->status(),
-            'recipient' => $recipient,
-            'response' => $response->json() ?? $response->body(),
-        ]);
-
-        if (! $response->successful()) {
-            throw new \Exception('Échec envoi WhatsApp : '.$response->body());
-        }
+        app(WhatsAppDispatcher::class)->dispatch((string) $notification->destinataire_contact, ['legacy_template' => $notification->code_template], 'legacy-notification:'.$notification->id);
+        throw new \RuntimeException('WhatsApp historique désactivé : utiliser le dispatcher TEST sécurisé.');
     }
 
     private function envoyerSms(object $notification): void

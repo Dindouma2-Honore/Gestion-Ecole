@@ -14,12 +14,12 @@ use App\Modules\Socle\Contracts\AnneeScolaireServiceContract;
 use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 use UnitEnum;
 
 class EmploiDuTempsResource extends Resource
@@ -44,16 +44,10 @@ class EmploiDuTempsResource extends Resource
     {
         return $schema
             ->components([
-                Select::make('matiere_id')
-                    ->label('Matière')
-                    ->options(fn () => Matiere::where('actif', true)->pluck('nom', 'id'))
-                    ->searchable()
-                    ->required(),
-
                 Select::make('annee_scolaire_id')
                     ->label('Année scolaire')
                     ->options(fn () => collect(app(AnneeScolaireServiceContract::class)->getToutesLesAnnees())
-                        ->mapWithKeys(fn ($a) => [data_get($a, 'id') => data_get($a, 'libelle', data_get($a, 'nom', '#' . data_get($a, 'id')))]))
+                        ->mapWithKeys(fn ($a) => [data_get($a, 'id') => data_get($a, 'libelle', data_get($a, 'nom', '#'.data_get($a, 'id')))]))
                     ->live()
                     ->default(fn () => app(AnneeScolaireServiceContract::class)->getAnneeCouranteId())
                     ->searchable()
@@ -61,19 +55,53 @@ class EmploiDuTempsResource extends Resource
 
                 Select::make('classe_id')
                     ->label('Classe')
-                    ->options(function (\Filament\Schemas\Components\Utilities\Get $get) {
+                    ->options(function (Get $get) {
                         $anneeScolaireId = (int) ($get('annee_scolaire_id')
                             ?: app(AnneeScolaireServiceContract::class)->getAnneeCouranteId());
 
                         return collect(app(ClasseServiceInterface::class)->getToutesLesClasses($anneeScolaireId))
                             ->pluck('nom', 'id');
                     })
+                    ->live()
+                    ->afterStateUpdated(function ($state, callable $set, Get $get) {
+                        if ($state) {
+                            $anneeId = (int) ($get('annee_scolaire_id') ?: app(AnneeScolaireServiceContract::class)->getAnneeCouranteId());
+                            $matiereId = $get('matiere_id') ? (int) $get('matiere_id') : null;
+                            $suggere = app(\App\Modules\Pedagogie\Contracts\EmploiDuTempsServiceInterface::class)
+                                ->getEnseignantSuggere((int) $state, $matiereId, $anneeId);
+                            if ($suggere) {
+                                $set('enseignant_id', $suggere);
+                            }
+                        }
+                    })
                     ->searchable()
                     ->required(),
 
+                Select::make('matiere_id')
+                    ->label('Matière / Domaine d\'activité')
+                    ->options(fn () => Matiere::where('actif', true)->pluck('nom', 'id'))
+                    ->searchable()
+                    ->live()
+                    ->afterStateUpdated(function ($state, callable $set, Get $get) {
+                        $classeId = $get('classe_id') ? (int) $get('classe_id') : null;
+                        if ($classeId) {
+                            $anneeId = (int) ($get('annee_scolaire_id') ?: app(AnneeScolaireServiceContract::class)->getAnneeCouranteId());
+                            $suggere = app(\App\Modules\Pedagogie\Contracts\EmploiDuTempsServiceInterface::class)
+                                ->getEnseignantSuggere($classeId, $state ? (int) $state : null, $anneeId);
+                            if ($suggere) {
+                                $set('enseignant_id', $suggere);
+                            }
+                        }
+                    }),
+
+                \Filament\Forms\Components\TextInput::make('libelle_activite')
+                    ->label('Libellé de l\'activité (si sans matière formelle)')
+                    ->placeholder('Ex: Accueil, Sieste, Motricité')
+                    ->visible(fn (Get $get) => empty($get('matiere_id'))),
+
                 Select::make('enseignant_id')
                     ->label('Enseignant')
-                    ->options(fn () => User::role('Enseignant')->pluck('name', 'id'))
+                    ->options(fn () => DB::table('enseignants')->join('employes', 'employes.id', '=', 'enseignants.employe_id')->orderBy('employes.nom')->selectRaw("CONCAT(employes.nom, ' ', employes.prenom) as nom, enseignants.id")->pluck('nom', 'enseignants.id'))
                     ->searchable()
                     ->required(),
 
@@ -92,9 +120,6 @@ class EmploiDuTempsResource extends Resource
                     )
                     ->required(),
 
-                Toggle::make('actif')
-                    ->label('Actif')
-                    ->default(true),
             ]);
     }
 
@@ -102,8 +127,13 @@ class EmploiDuTempsResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('matiere.nom')->label('Matière')->searchable(),
-                Tables\Columns\TextColumn::make('classe_id')->label('Classe (ID)'),
+                Tables\Columns\TextColumn::make('matiere.nom')
+                    ->label('Matière / Activité')
+                    ->formatStateUsing(fn ($record) => $record->matiere?->nom ?? $record->libelle_activite ?? 'Activité générale')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('classe_id')
+                    ->label('Classe')
+                    ->formatStateUsing(fn ($state) => rescue(fn () => app(ClasseServiceInterface::class)->getNomClasse((int) $state), "#{$state}")),
                 Tables\Columns\TextColumn::make('enseignant_id')
                     ->label('Enseignant')
                     ->formatStateUsing(fn ($state) => User::find($state)?->name ?? "#{$state}"),
@@ -111,9 +141,19 @@ class EmploiDuTempsResource extends Resource
                 Tables\Columns\TextColumn::make('creneau.heure_debut')->label('Début'),
                 Tables\Columns\TextColumn::make('creneau.heure_fin')->label('Fin'),
                 Tables\Columns\IconColumn::make('actif')->label('Actif')->boolean(),
+                Tables\Columns\TextColumn::make('statut')->label('État du planning')->badge()
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'preparation', 'brouillon' => 'En préparation',
+                        'genere' => 'Généré', 'ajuste' => 'Ajusté', 'valide' => 'Validé',
+                        'publie' => 'Publié', 'archive' => 'Archivé', default => (string) $state,
+                    })
+                    ->color(fn (?string $state) => match ($state) {
+                        'publie' => 'success', 'valide' => 'info', 'archive' => 'gray', 'ajuste' => 'warning', default => 'gray'
+                    }),
             ])
             ->actions([
-                EditAction::make(),
+                EditAction::make()->label('Modifier')
+                    ->visible(fn (EmploiDuTemps $record): bool => ! in_array($record->statut, ['valide', 'publie'], true)),
             ]);
     }
 

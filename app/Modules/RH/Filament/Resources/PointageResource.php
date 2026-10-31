@@ -2,6 +2,8 @@
 
 namespace App\Modules\RH\Filament\Resources;
 
+use App\Filament\Support\AmbassadorsDesign;
+use App\Modules\RH\Filament\Support\RhActions;
 use App\Modules\RH\Models\Pointage;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -34,7 +36,8 @@ class PointageResource extends Resource
             DatePicker::make('date_pointage')
                 ->required(),
             TimePicker::make('heure_arrivee'),
-            TimePicker::make('heure_depart'),
+            TimePicker::make('heure_depart')
+                ->afterOrEqual('heure_arrivee'),
             Select::make('mode_pointage')
                 ->options([
                     'biometrique' => 'Biométrique',
@@ -51,7 +54,9 @@ class PointageResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        AmbassadorsDesign::configureTable($table, null);
+
+        return $table->recordActions([RhActions::edit()])
             ->columns([
                 TextColumn::make('employe.nom_complet')->label('Employé')->sortable()->searchable(),
                 TextColumn::make('date_pointage')->date()->sortable(),

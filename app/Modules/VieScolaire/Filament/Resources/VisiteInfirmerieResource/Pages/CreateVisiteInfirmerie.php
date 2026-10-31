@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\Auth;
 class CreateVisiteInfirmerie extends CreateRecord
 {
     protected static string $resource = VisiteInfirmerieResource::class;
-     protected function mutateFormDataBeforeCreate(array $data): array
+
+    protected function mutateFormDataBeforeCreate(array $data): array
     {
         $data['date_heure'] = now();
         $data['traite_par'] = Auth::id();

@@ -7,10 +7,10 @@ namespace App\Modules\Finances\Filament\Pages;
 use App\Models\User;
 use App\Modules\Finances\Contracts\FraisScolaireServiceContract;
 use App\Modules\Finances\Models\Paiement;
+use App\Modules\Scolarite\Contracts\AcademicStructureCatalogContract;
 use App\Modules\Scolarite\Contracts\ClasseServiceInterface;
 use App\Modules\Scolarite\Contracts\EleveServiceInterface;
 use App\Modules\Socle\Contracts\AnneeScolaireServiceContract;
-use App\Modules\Socle\Contracts\ParametrageServiceContract;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
@@ -18,15 +18,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SituationFinanciere extends Page
 {
-    protected static bool $shouldRegisterNavigation = false;
-
     protected string $view = 'finances::filament.pages.situation-financiere';
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-document-chart-bar';
+    protected static string|\UnitEnum|null $navigationGroup = 'Scolarité';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Finances';
+    protected static ?string $navigationLabel = 'Situation financière';
 
-    protected static ?string $navigationLabel = 'Situation des élèves';
+    protected static ?int $navigationSort = 10;
 
     protected static ?string $title = 'Situation financière des élèves';
 
@@ -96,7 +94,7 @@ class SituationFinanciere extends Page
 
     private function niveaux(): array
     {
-        return collect(app(ParametrageServiceContract::class)->getTousLesNiveaux())->pluck('nom', 'id')->all();
+        return collect(app(AcademicStructureCatalogContract::class)->niveaux())->pluck('name', 'id')->all();
     }
 
     public function colonnesDisponibles(): array

@@ -30,8 +30,7 @@ class PermissionResource extends Resource
         /** @var User|null $user */
         $user = Auth::user();
 
-        return $user?->hasAnyRole(['Fondateur', 'Admin', 'Administrateur', 'Super Admin']) === true
-            || $user?->can('gerer_permissions') === true;
+        return $user?->hasAnyRole(['Fondateur', 'Admin', 'Administrateur', 'Super Admin']) === true;
     }
 
     public static function canCreate(): bool

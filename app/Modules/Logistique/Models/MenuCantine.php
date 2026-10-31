@@ -13,7 +13,7 @@ class MenuCantine extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'date_menu', 'description', 'allergenes',
+        'date_menu', 'repas', 'description', 'ingredients', 'allergenes', 'observations',
     ];
 
     protected $casts = [

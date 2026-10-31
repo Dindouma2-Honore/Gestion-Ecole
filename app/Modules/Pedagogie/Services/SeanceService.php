@@ -23,6 +23,7 @@ class SeanceService implements SeanceServiceInterface
     {
         $cours = EmploiDuTemps::where('annee_scolaire_id', $anneeScolaireId)
             ->where('actif', true)
+            ->where('statut', 'publie')
             ->with('creneau')
             ->get();
 
@@ -126,6 +127,74 @@ class SeanceService implements SeanceServiceInterface
         }
 
         $seance->update(['progression_renseignee' => true]);
+    }
+
+    public function remplacerEnseignant(int $seanceId, int $nouveauEnseignantId, string $motif): object
+    {
+        $seance = Seance::find($seanceId);
+
+        if (! $seance) {
+            throw new SeanceIntrouvableException($seanceId);
+        }
+
+        $prevuId = $seance->enseignant_prevu_id ?: $seance->enseignant_id;
+
+        $seance->update([
+            'enseignant_prevu_id' => $prevuId,
+            'enseignant_id' => $nouveauEnseignantId,
+            'enseignant_reel_id' => $nouveauEnseignantId,
+            'motif_remplacement' => $motif,
+        ]);
+
+        $this->audit->enregistrerAvecMotif(
+            $seance,
+            "Remplacement d'enseignant pour la séance #{$seanceId} (enseignant initial #{$prevuId} -> remplaçant #{$nouveauEnseignantId})",
+            $motif
+        );
+
+        return $seance;
+    }
+
+    public function renseignerSeance(int $seanceId, array $donnees): object
+    {
+        $seance = Seance::find($seanceId);
+
+        if (! $seance) {
+            throw new SeanceIntrouvableException($seanceId);
+        }
+
+        $champsAutorises = [
+            'contenu_enseigne', 'devoirs_donnes', 'duree_minutes',
+            'programme_lecon_id', 'salle_id',
+        ];
+
+        $payload = array_intersect_key($donnees, array_flip($champsAutorises));
+        $seance->update($payload);
+
+        return $seance;
+    }
+
+    public function verrouillerAppel(int $seanceId): void
+    {
+        $seance = Seance::find($seanceId);
+
+        if (! $seance) {
+            throw new SeanceIntrouvableException($seanceId);
+        }
+
+        $seance->update(['appel_verrouille' => true]);
+        $this->audit->enregistrer($seance, "Verrouillage de l'appel pour la séance #{$seanceId}");
+    }
+
+    public function estAppelVerrouille(int $seanceId): bool
+    {
+        $seance = Seance::find($seanceId);
+
+        if (! $seance) {
+            throw new SeanceIntrouvableException($seanceId);
+        }
+
+        return (bool) $seance->appel_verrouille;
     }
 
     /**

@@ -19,9 +19,4 @@ class OffrePedagogique extends Model
     {
         return $this->belongsTo(Matiere::class);
     }
-
-    public function programme(): BelongsTo
-    {
-        return $this->belongsTo(Programme::class);
-    }
 }

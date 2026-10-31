@@ -2,6 +2,8 @@
 
 namespace App\Modules\RH\Contracts;
 
+use Illuminate\Support\Collection;
+
 interface EmployeServiceContract
 {
     public function creerEmploye(array $donnees): object;
@@ -16,9 +18,13 @@ interface EmployeServiceContract
     /** @return array{user: object, mot_de_passe_temporaire: ?string} */
     public function creerAcces(int $employeId, string $email, int $roleId): array;
 
-    public function muter(int $employeId, string $nouveauPoste, ?int $nouveauNiveauId, string $commentaire): void;
+    public function muter(int $employeId, string|int $nouveauPoste, ?int $nouveauNiveauId, string $commentaire): void;
 
-    public function promouvoir(int $employeId, string $nouveauPoste, string $commentaire): void;
+    public function promouvoir(int $employeId, string|int $nouveauPoste, string $commentaire, ?float $nouveauSalaire = null, ?float $nouveauTauxHoraire = null): void;
 
     public function getEmployeParUser(int $userId): ?object;
+
+    public function ajouterDiplome(int $employeId, array $donnees): object;
+
+    public function getDiplomes(int $employeId): Collection;
 }

@@ -9,7 +9,7 @@ interface PaieServiceContract
     public function validerAvance(int $avanceId, string $motifValidation): object;
 
     /** Retourne le bulletin calculé sans exposer le modèle interne du module RH. */
-    public function calculerBulletin(int $employeId, int $mois, int $annee): object;
+    public function calculerBulletin(int $employeId, int $mois, int $annee, ?\DateTimeInterface $periodeDebut = null, ?\DateTimeInterface $periodeFin = null): object;
 
     public function validerBulletin(int $bulletinId, int $validateurId): void;
 

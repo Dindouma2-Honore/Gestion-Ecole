@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace App\Modules\Scolarite;
 
+use App\Modules\Scolarite\Contracts\AcademicStructureCatalogContract;
+use App\Modules\Scolarite\Contracts\AcademicStructureManagementContract;
+use App\Modules\Scolarite\Contracts\AcademicStructureReadContract;
 use App\Modules\Scolarite\Contracts\ClasseServiceInterface;
+use App\Modules\Scolarite\Contracts\ClassesPedagogiquesReadContract;
 use App\Modules\Scolarite\Contracts\CourrierDestinataireServiceContract;
 use App\Modules\Scolarite\Contracts\DossierEleveServiceContract;
 use App\Modules\Scolarite\Contracts\EleveServiceInterface;
+use App\Modules\Scolarite\Contracts\EnrollmentNotificationRecipient;
 use App\Modules\Scolarite\Contracts\FactureServiceInterface;
 use App\Modules\Scolarite\Contracts\FraisServiceContract;
+use App\Modules\Scolarite\Contracts\InscriptionFinanceReadContract;
 use App\Modules\Scolarite\Contracts\InscriptionServiceInterface;
 use App\Modules\Scolarite\Contracts\PaiementServiceContract;
 use App\Modules\Scolarite\Contracts\ParentTuteurServiceInterface;
@@ -18,12 +24,17 @@ use App\Modules\Scolarite\Models\Classe;
 use App\Modules\Scolarite\Models\FraisEleve;
 use App\Modules\Scolarite\Models\GrilleTarifaire;
 use App\Modules\Scolarite\Models\Inscription;
+use App\Modules\Scolarite\Models\Niveau;
 use App\Modules\Scolarite\Models\Paiement;
 use App\Modules\Scolarite\Models\TableauHonneur;
+use App\Modules\Scolarite\Policies\NiveauPolicy;
+use App\Modules\Scolarite\Services\AcademicStructureService;
 use App\Modules\Scolarite\Services\ClasseService;
+use App\Modules\Scolarite\Services\ClassesPedagogiquesReadService;
 use App\Modules\Scolarite\Services\CourrierDestinataireService;
 use App\Modules\Scolarite\Services\DossierEleveService;
 use App\Modules\Scolarite\Services\EleveService;
+use App\Modules\Scolarite\Services\EnrollmentNotificationRecipientService;
 use App\Modules\Scolarite\Services\FactureService;
 use App\Modules\Scolarite\Services\FraisService;
 use App\Modules\Scolarite\Services\InscriptionService;
@@ -33,17 +44,24 @@ use App\Modules\Scolarite\Services\TableauHonneurService;
 use App\Modules\Scolarite\Services\TransfertAnneeService;
 use App\Modules\Socle\Contracts\Observers\VerrouAnneeObserver;
 use App\Modules\Socle\Contracts\TransfertElevesAnneeContract;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class ScolariteServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->bind(ClassesPedagogiquesReadContract::class, ClassesPedagogiquesReadService::class);
+        $this->app->bind(EnrollmentNotificationRecipient::class, EnrollmentNotificationRecipientService::class);
+        $this->app->bind(AcademicStructureReadContract::class, AcademicStructureService::class);
+        $this->app->bind(AcademicStructureCatalogContract::class, AcademicStructureService::class);
+        $this->app->bind(AcademicStructureManagementContract::class, AcademicStructureService::class);
         $this->app->bind(EleveServiceInterface::class, EleveService::class);
         $this->app->bind(ParentTuteurServiceInterface::class, ParentTuteurService::class);
         $this->app->bind(ClasseServiceInterface::class, ClasseService::class);
         $this->app->bind(CourrierDestinataireServiceContract::class, CourrierDestinataireService::class);
         $this->app->bind(InscriptionServiceInterface::class, InscriptionService::class);
+        $this->app->bind(InscriptionFinanceReadContract::class, InscriptionService::class);
         $this->app->bind(FactureServiceInterface::class, FactureService::class);
 
         // Circuit financier interne (Module 5) — l'inscription ne dépend
@@ -64,6 +82,7 @@ class ScolariteServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Gate::policy(Niveau::class, NiveauPolicy::class);
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
         $this->loadViewsFrom(__DIR__.'/resources/views', 'scolarite');
 

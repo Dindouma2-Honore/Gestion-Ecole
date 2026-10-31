@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Scolarite\Filament\Resources;
 
+use App\Filament\Support\AmbassadorsDesign;
 use App\Modules\Scolarite\Filament\Resources\FactureResource\Pages;
+use App\Modules\Scolarite\Filament\Support\ScolariteActions;
 use App\Modules\Scolarite\Models\Classe;
 use App\Modules\Scolarite\Models\FactureGeneree;
 use BackedEnum;
@@ -52,6 +54,8 @@ class FactureResource extends Resource
 
     public static function table(Table $table): Table
     {
+        ScolariteActions::configureTable($table, 'view');
+
         return $table
             ->query(FactureGeneree::query()->with(['inscription.eleve', 'inscription.classe']))
             ->columns([
@@ -131,7 +135,7 @@ class FactureResource extends Resource
                     )),
             ])
             ->actions([
-                ViewAction::make(),
+                AmbassadorsDesign::goldenFormModal(ViewAction::make()),
 
                 Action::make('imprimer')
                     ->label('Imprimer')

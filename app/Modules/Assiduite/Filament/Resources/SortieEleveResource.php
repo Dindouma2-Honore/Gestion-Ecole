@@ -2,6 +2,7 @@
 
 namespace App\Modules\Assiduite\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Modules\Assiduite\Filament\Resources\SortieEleveResource\Pages;
 use App\Modules\Assiduite\Models\SortieEleve;
 use Filament\Forms\Components\DateTimePicker;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Auth;
 
 class SortieEleveResource extends Resource
 {
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $model = SortieEleve::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-arrow-right-start-on-rectangle';
@@ -58,7 +61,7 @@ class SortieEleveResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordModal::configure($table
             ->columns([
                 TextColumn::make('eleve.nom')->label('Élève')->sortable()->searchable(),
                 TextColumn::make('parent.nom')->label('Parent / Tuteur')->sortable(),
@@ -72,7 +75,7 @@ class SortieEleveResource extends Resource
                     }),
                 TextColumn::make('heure_sortie')->dateTime()->sortable(),
                 TextColumn::make('remisPar.name')->label('Remis par'),
-            ]);
+            ]), static::class);
     }
 
     public static function getPages(): array

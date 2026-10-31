@@ -8,11 +8,13 @@ use App\Models\User;
 use App\Modules\Socle\Contracts\HabilitationServiceContract;
 use App\Modules\Socle\Exceptions\FonctionnaliteIntrouvableException;
 use App\Modules\Socle\Models\HabilitationRoleFonctionnalite;
+use App\Modules\Technique\Services\TechnicalAccess;
 
 final class ModuleAccess
 {
     /** @var array<string, list<string>> */
     private const MODULE_ROLES = [
+        'Technique' => ['Fondateur'],
         'Socle' => ['Fondateur'],
         'RH' => ['Fondateur'],
         'Scolarite' => ['Fondateur'],
@@ -39,6 +41,10 @@ final class ModuleAccess
             return false;
         }
 
+        if ($module === 'Technique') {
+            return TechnicalAccess::allows($user);
+        }
+
         // Fondateur, Admin, Administrateur & Super Admin have full module access
         if ($user->hasAnyRole(['Fondateur', 'Admin', 'Administrateur', 'Super Admin'])) {
             return true;
@@ -51,7 +57,7 @@ final class ModuleAccess
 
         $moduleKey = strtolower($module);
 
-        if ($user->can("module.{$moduleKey}") || $user->can("access_module_{$moduleKey}") || self::groupAccess($user, $module)) {
+        if ($user->can("module.{$moduleKey}") || self::groupAccess($user, $module)) {
             return true;
         }
 
@@ -145,26 +151,32 @@ final class ModuleAccess
 
     public static function featureCodeFromComponent(string $component): ?string
     {
+        if ($feature = HabilitationCatalog::featureFor($component)) {
+            return $feature;
+        }
+
         return match (true) {
             // Référentiels propres au module Personnel (avant les noms génériques du Socle).
-            str_contains($component, 'PersonnelRoleResource') || str_contains($component, 'PosteAdministratifResource') || str_contains($component, 'CategoriePersonnelResource') => 'rh.employes',
+            str_contains($component, 'PersonnelRoleResource') || str_contains($component, 'PosteAdministratifResource') || str_contains($component, 'CategoriePersonnelResource') || str_contains($component, 'PalierAncienneteResource') => 'rh.employes',
 
             // Socle
             str_contains($component, 'UserResource') => 'socle.utilisateurs',
             str_contains($component, 'RoleResource') || str_contains($component, 'PermissionResource') => 'socle.roles',
             str_contains($component, 'ActivityLogResource') => 'socle.audit',
+            str_contains($component, 'CalendrierInstitutionnelResource') => 'viescolaire.calendrier',
             str_contains($component, 'FormatNumerotationResource') || str_contains($component, 'JourFerieResource') || str_contains($component, 'SeuilValidationResource') || str_contains($component, 'AnneeScolaireResource') => 'socle.parametres',
 
             // RH
             str_contains($component, 'EmployeResource') => 'rh.employes',
             str_contains($component, 'EnseignantResource') => 'rh.enseignants',
-            str_contains($component, 'CongeResource') => 'rh.conges',
+            str_contains($component, 'CongeResource') || str_contains($component, 'TypeCongeResource') => 'rh.conges',
             str_contains($component, 'BulletinPaieResource') || str_contains($component, 'FichePaieResource') || str_contains($component, 'PaieResource') => 'rh.paie',
 
             // Scolarité
             str_contains($component, 'RemiseExonerationResource') => 'scolarite.inscriptions',
             str_contains($component, 'EleveResource') => 'scolarite.eleves',
             str_contains($component, 'InscriptionResource') => 'scolarite.inscriptions',
+            str_contains($component, 'TransfertAffectationResource') => 'scolarite.inscriptions',
             str_contains($component, 'ClasseResource') || str_contains($component, 'NiveauResource') => 'scolarite.classes',
 
             // Pédagogie
@@ -182,14 +194,26 @@ final class ModuleAccess
             // Communication
             str_contains($component, 'AnnonceResource') || str_contains($component, 'CommunicationResource') => 'communication.annonces',
             str_contains($component, 'RendezVousResource') => 'communication.rendezvous',
-            str_contains($component, 'NotificationResource') || str_contains($component, 'TemplateNotificationResource') => 'communication.notifications',
+            str_contains($component, 'WhatsApp') || str_contains($component, 'CommunicationMessage') || str_contains($component, 'NotificationEnvoyeeResource') || str_contains($component, 'NotificationResource') || str_contains($component, 'TemplateNotificationResource') => 'communication.notifications',
 
             // Assiduité & Vie Scolaire
+            str_contains($component, 'AssiduiteDashboard') => 'assiduite.dashboard',
+            str_contains($component, 'PresencesEleves') => 'assiduite.eleves',
+            str_contains($component, 'AbsencesRetards') || str_contains($component, 'AssiduiteJournaliereResource') => 'assiduite.absences',
+            str_contains($component, 'PointagePersonnel') => 'assiduite.personnel',
+            str_contains($component, 'PointageBrutResource') => 'assiduite.biometrie',
+            str_contains($component, 'JustificationAssiduiteResource') || str_contains($component, 'JustificationsAnomalies') => 'assiduite.justifications',
+            str_contains($component, 'AnomalieAssiduiteResource') => 'assiduite.anomalies',
+            str_contains($component, 'RapportsAssiduite') => 'assiduite.rapports',
             str_contains($component, 'PointageResource') || str_contains($component, 'AbsenceResource') => 'assiduite.pointage',
+            str_contains($component, 'IncidentVieScolaireResource') => 'viescolaire.incidents',
+            str_contains($component, 'ReclamationResource') && str_contains($component, 'VieScolaire') => 'viescolaire.reclamations',
             str_contains($component, 'ReclamationResource') || str_contains($component, 'IncidentResource') || str_contains($component, 'SanctionResource') => 'assiduite.reclamations',
-            str_contains($component, 'VisiteurResource') || str_contains($component, 'VisiteInfirmerieResource') => 'viescolaire.visiteurs',
+            str_contains($component, 'VisiteInfirmerieResource') => 'viescolaire.infirmerie',
+            str_contains($component, 'VisiteurResource') => 'viescolaire.visiteurs',
             str_contains($component, 'DossierSanteResource') => 'viescolaire.sante',
             str_contains($component, 'SortieEleveResource') => 'viescolaire.sorties',
+            str_contains($component, 'EvenementScolaireResource') => 'viescolaire.evenements',
 
             // Logistique
             str_contains($component, 'SalleResource') || str_contains($component, 'EquipementResource') => 'logistique.salles',

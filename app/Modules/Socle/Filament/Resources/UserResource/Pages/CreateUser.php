@@ -1,50 +1,42 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Modules\Socle\Filament\Resources\UserResource\Pages;
 
 use App\Modules\Socle\Filament\Resources\UserResource;
-use App\Modules\Socle\Services\AssignationRoleService;
+use App\Modules\Socle\Services\StaffAccountService;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\ValidationException;
 
 class CreateUser extends CreateRecord
 {
     protected static string $resource = UserResource::class;
 
-    protected function mutateFormDataBeforeCreate(array $data): array
+    protected function handleRecordCreation(array $data): Model
     {
-        $data['name'] = trim((string) ($data['name'] ?? '')) ?: trim($data['prenom'].' '.$data['nom']);
-
-        if (! in_array($this->data['role'], ['Directeur', 'Enseignant'], true)) {
-            $data['niveau_id'] = null;
+        try {
+            return app(StaffAccountService::class)->create(array_merge($data, array_filter(['role' => $this->data['role'] ?? null])));
+        } catch (ValidationException $exception) {
+            throw ValidationException::withMessages(collect($exception->errors())->mapWithKeys(fn ($messages, $key) => ['data.'.$key => $messages])->all());
         }
-
-        return $data;
     }
 
-    protected function handleRecordCreation(array $data): \Illuminate\Database\Eloquent\Model
+    protected function getCreatedNotification(): ?Notification
     {
-        $rawPassword = ! empty($this->data['password']) ? (string) $this->data['password'] : null;
-
-        /** @var \App\Models\User $record */
-        $record = new (static::getModel())($data);
-        if ($rawPassword) {
-            $record->raw_temp_password = $rawPassword;
-        }
-        $record->save();
-
-        return $record;
+        return static::creationNotification($this->record);
     }
 
-    protected function afterCreate(): void
+    public static function creationNotification(Model $record): Notification
     {
-        $niveauId = ! empty($this->data['niveau_id']) ? (int) $this->data['niveau_id'] : null;
+        return Notification::make()
+            ->success()
+            ->title('Utilisateur créé avec succès')
+            ->body("Le lien d'activation a été envoyé.");
+    }
 
-        app(AssignationRoleService::class)->assignerRole(
-            $this->record,
-            $this->data['role'],
-            $niveauId,
-        );
+    protected function getRedirectUrl(): string
+    {
+        return UserResource::getUrl();
     }
 }

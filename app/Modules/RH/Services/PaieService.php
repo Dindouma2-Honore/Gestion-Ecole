@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\RH\Services;
 
+use App\Modules\Communication\Services\WhatsAppDispatcher;
 use App\Modules\Finances\Contracts\CaisseServiceContract;
 use App\Modules\RH\Contracts\AbsenceServiceContract;
 use App\Modules\RH\Contracts\AvanceSalaireServiceContract;
@@ -18,9 +19,9 @@ use App\Modules\RH\Exceptions\BulletinDejaValideException;
 use App\Modules\RH\Exceptions\ContratInexistantException;
 use App\Modules\RH\Models\AvanceSalaire;
 use App\Modules\RH\Models\BulletinPaie;
-use App\Modules\RH\Models\CategoriePersonnel;
 use App\Modules\RH\Models\Employe;
 use App\Modules\RH\Models\EtatVirement;
+use App\Modules\RH\Models\PalierAnciennete;
 use App\Modules\Socle\Contracts\AnneeScolaireServiceContract;
 use App\Modules\Socle\Contracts\AuditServiceContract;
 use App\Modules\Socle\Contracts\ParametrageServiceContract;
@@ -87,7 +88,7 @@ class PaieService implements PaieServiceContract
         });
     }
 
-    public function calculerBulletin(int $employeId, int $mois, int $annee): BulletinPaie
+    public function calculerBulletin(int $employeId, int $mois, int $annee, ?\DateTimeInterface $periodeDebut = null, ?\DateTimeInterface $periodeFin = null): BulletinPaie
     {
         $contrat = $this->contratService->getContratActif($employeId);
         if (! $contrat) {
@@ -100,21 +101,51 @@ class PaieService implements PaieServiceContract
         $this->actualiserAncienneteEtGrille($employeId, $contrat, $mois, $annee);
         $contrat->refresh();
 
-        return DB::transaction(function () use ($employeId, $mois, $annee, $contrat): BulletinPaie {
+        $periodeDebut ??= Carbon::create($annee, $mois, 1);
+        $periodeFin ??= Carbon::create($annee, $mois, 1)->endOfMonth();
+
+        if ($periodeFin < $periodeDebut) {
+            throw new \InvalidArgumentException('La fin de période doit être postérieure ou égale au début de période.');
+        }
+
+        return DB::transaction(function () use ($employeId, $mois, $annee, $periodeDebut, $periodeFin, $contrat): BulletinPaie {
             $avecFixe = in_array($contrat->categorie_paie, ['fixe', 'mixte'], true);
             $avecHoraire = in_array($contrat->categorie_paie, ['horaire', 'mixte'], true);
-            $heures = $avecHoraire ? $this->heuresTravaillees->getNombreHeuresTravaillees($employeId, $mois, $annee) : 0.0;
-            $composanteFixe = $avecFixe ? (float) $contrat->salaire_base : 0.0;
+            $heures = $avecHoraire
+                ? $this->heuresTravaillees->getNombreHeuresTravailleesPourPeriode($employeId, $periodeDebut, $periodeFin)
+                : 0.0;
+            $composanteFixe = $avecFixe ? $this->proratiserMontantMensuel((float) $contrat->salaire_base, $periodeDebut, $periodeFin) : 0.0;
             $composanteHoraire = $avecHoraire ? round((float) $contrat->taux_horaire * $heures, 2) : 0.0;
-            $salaireBase = $composanteFixe + $composanteHoraire;
-            $periodePaie = Carbon::create($annee, $mois, 1);
-            $primes = $avecFixe ? $this->primeService->getPrimesActives($employeId, $periodePaie) : collect();
+            $fonctionsRemunerees = $contrat->fonctionsRemunerees()
+                ->with('fonction')
+                ->whereDate('date_effet', '<=', $periodeFin)
+                ->get();
+            $fonctionFixeMensuelle = (float) $fonctionsRemunerees
+                ->where('mode_remuneration', 'salaire_base')
+                ->sum('montant');
+            $fonctionFixe = $this->proratiserMontantMensuel($fonctionFixeMensuelle, $periodeDebut, $periodeFin);
+            $fonctionHoraire = $avecHoraire
+                ? round((float) $fonctionsRemunerees
+                    ->where('mode_remuneration', 'tarif_horaire')
+                    ->sum('montant') * $heures, 2)
+                : 0.0;
+            $salaireBase = $composanteFixe + $composanteHoraire + $fonctionFixe + $fonctionHoraire;
+            $primes = $this->primeService->getPrimesPourPeriode(
+                $employeId,
+                Carbon::instance($periodeDebut),
+                Carbon::instance($periodeFin),
+            );
             $totalPrimes = (float) $primes->sum('montant');
-            [$retenueAbsences, $retenueSuspension] = $avecFixe ? $this->retenuesFixes($employeId, $mois, $annee, $composanteFixe) : [0.0, 0.0];
+            [$retenueAbsences, $retenueSuspension] = $avecFixe ? $this->retenuesFixes($employeId, $periodeDebut, $periodeFin, $composanteFixe) : [0.0, 0.0];
             $taux = (float) $this->parametrage->getParametre('tauxCotisationCnpsSalarie');
             // Hypothèse confirmée provisoirement : les cotisations s'appliquent aussi à la branche horaire.
             $cotisations = round($salaireBase * $taux, 2);
-            $avance = AvanceSalaire::query()->where('employe_id', $employeId)->where('statut', 'approuvee')->first();
+            $avance = AvanceSalaire::query()
+                ->where('employe_id', $employeId)
+                ->where('statut', 'approuvee')
+                ->whereDate(DB::raw('COALESCE(decaissee_le, date_demande)'), '<=', $periodeFin)
+                ->orderByRaw('COALESCE(decaissee_le, date_demande)')
+                ->first();
             $netAvantAvance = max(0, $salaireBase + $totalPrimes - $retenueAbsences - $retenueSuspension - $cotisations);
             $avanceADeduire = min($avance?->resteADeduire() ?? 0.0, $netAvantAvance);
             $anneeScolaireId = $this->anneeScolaire->getAnneeCourante()?->id;
@@ -125,6 +156,7 @@ class PaieService implements PaieServiceContract
             $bulletin = BulletinPaie::create([
                 'employe_id' => $employeId, 'contrat_id' => $contrat->id,
                 'mois' => $mois, 'annee' => $annee, 'annee_scolaire_id' => $anneeScolaireId,
+                'periode_debut' => $periodeDebut, 'periode_fin' => $periodeFin,
                 'salaire_base' => $salaireBase, 'total_primes' => $totalPrimes,
                 'total_heures_supplementaires' => 0,
                 'total_retenues' => $retenueAbsences + $retenueSuspension,
@@ -133,12 +165,22 @@ class PaieService implements PaieServiceContract
                 'statut' => 'calcule',
             ]);
             if ($avecFixe) {
-                $bulletin->lignes()->create(['type' => 'gain', 'libelle' => 'Salaire de base', 'montant' => $composanteFixe]);
+                $bulletin->lignes()->create(['type' => 'gain', 'libelle' => 'Salaire de base', 'montant' => $composanteFixe, 'date_reference' => $periodeDebut]);
             }
             if ($avecHoraire) {
-                $bulletin->lignes()->create(['type' => 'gain', 'libelle' => sprintf('Rémunération horaire : %.2f h × %s FCFA', $heures, number_format((float) $contrat->taux_horaire, 0, ',', ' ')), 'montant' => $composanteHoraire]);
+                $bulletin->lignes()->create(['type' => 'gain', 'libelle' => sprintf('Rémunération horaire : %.2f h × %s FCFA', $heures, number_format((float) $contrat->taux_horaire, 0, ',', ' ')), 'montant' => $composanteHoraire, 'date_reference' => $periodeDebut]);
             }
-            $this->creerLignes($bulletin, $primes, $retenueAbsences, $retenueSuspension, $cotisations, $avanceADeduire);
+            if ($fonctionFixe > 0) {
+                $bulletin->lignes()->create(['type' => 'gain', 'libelle' => 'Rémunération fonction administrative', 'montant' => $fonctionFixe, 'date_reference' => $fonctionsRemunerees->first()?->date_effet]);
+            }
+            if ($fonctionHoraire > 0) {
+                $bulletin->lignes()->create(['type' => 'gain', 'libelle' => sprintf('Rémunération horaire fonction : %.2f h', $heures), 'montant' => $fonctionHoraire, 'date_reference' => $fonctionsRemunerees->first()?->date_effet]);
+            }
+            $this->creerLignes($bulletin, $primes, $retenueAbsences, $retenueSuspension, $cotisations, $avanceADeduire, $avance);
+            $primeIds = $primes->pluck('prime_id')->filter()->values()->all();
+            if ($primeIds !== []) {
+                $this->primeService->marquerPrimesIntegrees($primeIds, (int) $bulletin->id);
+            }
             if ($avance && $avanceADeduire > 0) {
                 $this->avanceService->enregistrerRecouvrement($avance->id, $avanceADeduire);
             }
@@ -152,8 +194,8 @@ class PaieService implements PaieServiceContract
         $employe = Employe::query()->findOrFail($employeId);
         $datePaie = Carbon::create($annee, $mois, 1)->endOfMonth();
         $anciennete = $employe->date_embauche?->diffInMonths($datePaie) ?? 0;
-        $categorie = CategoriePersonnel::query()
-            ->where('progression_automatique', true)
+        $categorie = PalierAnciennete::query()
+            ->where('actif', true)
             ->where('anciennete_min_mois', '<=', $anciennete)
             ->where(fn ($q) => $q->whereNull('anciennete_max_mois')->orWhere('anciennete_max_mois', '>=', $anciennete))
             ->orderByDesc('anciennete_min_mois')
@@ -163,14 +205,14 @@ class PaieService implements PaieServiceContract
             return;
         }
 
-        $employe->update(['categorie_anciennete_id' => $categorie->id]);
+        $employe->update(['palier_anciennete_id' => $categorie->id]);
         $ancienneLigne = $contrat->grille_salariale_id ? DB::table('grilles_salariales')->find($contrat->grille_salariale_id) : null;
         if (! $ancienneLigne) {
             return;
         }
 
         $nouvelleLigne = DB::table('grilles_salariales')
-            ->where('categorie_personnel_id', $categorie->id)
+            ->where('palier_anciennete_id', $categorie->id)
             ->where('base_calcul', $ancienneLigne->base_calcul)
             ->where('matiere_id', $ancienneLigne->matiere_id)
             ->where('poste_administratif_id', $ancienneLigne->poste_administratif_id)
@@ -189,12 +231,36 @@ class PaieService implements PaieServiceContract
         }
     }
 
-    private function retenuesFixes(int $employeId, int $mois, int $annee, float $base): array
+    private function retenuesFixes(int $employeId, \DateTimeInterface $debut, \DateTimeInterface $fin, float $base): array
     {
-        return [
-            $this->retenue($base, $this->joursAbsenceNonJustifiee($employeId, $mois, $annee)),
-            $this->retenue($base, $this->joursSuspension($employeId, $mois, $annee)),
-        ];
+        $joursAbsence = $this->absenceService->getJoursAbsenceNonJustifieePourPeriode(
+            $employeId,
+            Carbon::instance($debut),
+            Carbon::instance($fin),
+        );
+
+        return [$this->retenue($base, $joursAbsence), 0.0];
+    }
+
+    private function proratiserMontantMensuel(float $montant, \DateTimeInterface $debut, \DateTimeInterface $fin): float
+    {
+        $debut = Carbon::instance($debut)->startOfDay();
+        $fin = Carbon::instance($fin)->startOfDay();
+        $total = 0.0;
+        $jour = $debut->copy()->startOfMonth();
+
+        while ($jour->lte($fin)) {
+            $debutMois = $jour->copy()->startOfMonth();
+            $finMois = $jour->copy()->endOfMonth();
+            $partDebut = $debut->greaterThan($debutMois) ? $debut : $debutMois;
+            $partFin = $fin->lessThan($finMois) ? $fin : $finMois;
+            if ($partDebut->lte($partFin)) {
+                $total += ($montant / $jour->daysInMonth) * ($partDebut->diffInDays($partFin) + 1);
+            }
+            $jour->addMonth()->startOfMonth();
+        }
+
+        return round($total, 2);
     }
 
     private function joursAbsenceNonJustifiee(int $employeId, int $mois, int $annee): int
@@ -214,34 +280,54 @@ class PaieService implements PaieServiceContract
         return $this->absenceService->getJoursSuspension($employeId, $mois, $annee);
     }
 
-    private function creerLignes(BulletinPaie $bulletin, Collection $primes, float $absences, float $suspensions, float $cotisations, float $avance): void
+    private function creerLignes(BulletinPaie $bulletin, Collection $primes, float $absences, float $suspensions, float $cotisations, float $avance, ?AvanceSalaire $avanceModel): void
     {
         foreach ($primes as $prime) {
-            $bulletin->lignes()->create(['type' => 'prime', 'libelle' => $prime->libelle, 'montant' => $prime->montant]);
+            $bulletin->lignes()->create(['type' => 'prime', 'libelle' => $prime->libelle, 'montant' => $prime->montant, 'date_reference' => $prime->date_reference ?? null]);
         }
         foreach ([['retenue', 'Absences non justifiées', $absences], ['retenue', 'Suspension disciplinaire', $suspensions], ['cotisation', 'CNPS', $cotisations], ['avance', 'Remboursement avance sur salaire', $avance]] as [$type, $libelle, $montant]) {
             if ($montant > 0) {
-                $bulletin->lignes()->create(compact('type', 'libelle') + ['montant' => -$montant]);
+                $bulletin->lignes()->create(compact('type', 'libelle') + [
+                    'montant' => -$montant,
+                    'date_reference' => $type === 'avance'
+                        ? ($avanceModel?->decaissee_le?->toDateString() ?? $avanceModel?->date_demande?->toDateString())
+                        : $bulletin->periode_debut,
+                ]);
             }
         }
     }
 
     public function validerBulletin(int $bulletinId, int $validateurId): void
     {
-        $bulletin = BulletinPaie::findOrFail($bulletinId);
-        if (in_array($bulletin->statut, ['valide', 'paye'], true)) {
-            throw new BulletinDejaValideException($bulletinId);
-        }
-        $bulletin->update(['statut' => 'valide']);
+        $bulletin = DB::transaction(function () use ($bulletinId): BulletinPaie {
+            $bulletin = BulletinPaie::query()->lockForUpdate()->findOrFail($bulletinId);
+            if (in_array($bulletin->statut, ['valide', 'paye'], true)) {
+                throw new BulletinDejaValideException($bulletinId);
+            }
+            if (! in_array($bulletin->statut, ['brouillon', 'calcule'], true)) {
+                throw new \DomainException("Un bulletin au statut « {$bulletin->statut} » ne peut pas être validé.");
+            }
+            $bulletin->update(['statut' => 'valide']);
+
+            return $bulletin;
+        });
+
+        app(WhatsAppDispatcher::class)->dispatchBulletin($bulletin->refresh());
     }
 
+    /**
+     * RH constate le montant dû (bulletin validé) ; le décaissement effectif appartient à Finance.
+     * Le bulletin ne passe PAYÉ qu'après l'enregistrement du mouvement par la frontière Finance,
+     * dans la même transaction : si Finance échoue, le bulletin reste VALIDÉ.
+     */
     public function marquerPaye(int $bulletinId, \DateTimeInterface $datePaiement): void
     {
-        $bulletin = BulletinPaie::findOrFail($bulletinId);
-        if ($bulletin->statut !== 'valide') {
-            throw new BulletinDejaValideException($bulletinId);
-        }
-        DB::transaction(function () use ($bulletin, $datePaiement): void {
+        DB::transaction(function () use ($bulletinId, $datePaiement): void {
+            $bulletin = BulletinPaie::query()->lockForUpdate()->findOrFail($bulletinId);
+            if ($bulletin->statut !== 'valide') {
+                throw new BulletinDejaValideException($bulletinId);
+            }
+
             $this->caisse->enregistrerMouvement('decaissement', (float) $bulletin->net_a_payer, $bulletin, null, 'Salaires', 'RH', 'Salaires');
             BulletinPaie::query()->whereKey($bulletin->id)->update(['statut' => 'paye', 'date_paiement' => $datePaiement]);
             $this->audit->enregistrerAvecMotif($bulletin, 'Paiement du bulletin de paie', "Bulletin marqué payé à la date {$datePaiement->format('Y-m-d')}");

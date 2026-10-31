@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Pedagogie\Filament\Resources;
 
 use App\Models\User;
+use App\Modules\Pedagogie\Contracts\PresenceServiceInterface;
 use App\Modules\Pedagogie\Contracts\SeanceServiceInterface;
 use App\Modules\Pedagogie\Filament\Resources\SeanceResource\Pages;
+use App\Modules\Pedagogie\Models\DisciplineEleve;
 use App\Modules\Pedagogie\Models\Seance;
+use App\Modules\Pedagogie\Services\ProgrammeAccessService;
+use App\Modules\Scolarite\Contracts\EleveServiceInterface;
 use BackedEnum;
 use Carbon\Carbon;
 use Filament\Actions\Action;
@@ -63,6 +67,59 @@ class SeanceResource extends Resource
                 ]),
             ])
             ->actions([
+                Action::make('faireAppel')
+                    ->label('Faire l’appel')
+                    ->icon('heroicon-o-clipboard-document-check')
+                    ->color('success')
+                    ->visible(fn (Seance $record) => in_array($record->statut, ['programmee', 'commencee', 'dispensee'], true) && ! app(PresenceServiceInterface::class)->estAppelVerrouille($record->id))
+                    ->form(function (Seance $record) {
+                        $classeId = $record->emploiDuTemps?->classe_id;
+                        $eleves = $classeId ? app(EleveServiceInterface::class)->getElevesParClasse((int) $classeId) : [];
+
+                        return [
+                            Forms\Components\CheckboxList::make('absents')
+                                ->label('Élèves absents (les non-cochés sont réputés présents)')
+                                ->options(collect($eleves)->mapWithKeys(fn ($e) => [$e['id'] => trim(($e['nom'] ?? '').' '.($e['prenom'] ?? ''))]))
+                                ->columns(2),
+                            Forms\Components\Repeater::make('retards')
+                                ->label('Élèves en retard')
+                                ->schema([
+                                    Forms\Components\Select::make('eleve_id')
+                                        ->label('Élève')
+                                        ->options(collect($eleves)->mapWithKeys(fn ($e) => [$e['id'] => trim(($e['nom'] ?? '').' '.($e['prenom'] ?? ''))]))
+                                        ->required(),
+                                    Forms\Components\TimePicker::make('heure_arrivee')
+                                        ->label('Heure d’arrivée')
+                                        ->default(now()->format('H:i')),
+                                ])
+                                ->columns(2)
+                                ->defaultItems(0),
+                        ];
+                    })
+                    ->action(function (Seance $record, array $data): void {
+                        $saisies = [];
+                        foreach ($data['absents'] ?? [] as $eleveId) {
+                            $saisies[(int) $eleveId] = 'absent';
+                        }
+                        foreach ($data['retards'] ?? [] as $retard) {
+                            if (! empty($retard['eleve_id'])) {
+                                $saisies[(int) $retard['eleve_id']] = [
+                                    'statut' => 'retard',
+                                    'heure_arrivee' => $retard['heure_arrivee'] ?? null,
+                                ];
+                            }
+                        }
+
+                        app(PresenceServiceInterface::class)->faireAppel($record->id, $saisies, true);
+
+                        Notification::make()
+                            ->title('Appel enregistré avec succès')
+                            ->success()
+                            ->send();
+                    }),
+                Action::make('progression')->label('Renseigner la progression')->icon('heroicon-o-pencil-square')
+                    ->visible(fn (Seance $record) => $record->statut === 'dispensee' && (int) $record->enseignant_id === app(ProgrammeAccessService::class)->enseignantId())
+                    ->url(fn (Seance $record) => ProgressionResource::getUrl('index', ['seance' => $record->id])),
                 Action::make('commencer')
                     ->label('Commencer')
                     ->icon('heroicon-o-play')
@@ -101,6 +158,36 @@ class SeanceResource extends Resource
                             ->title('Séance reportée, une nouvelle séance a été programmée.')
                             ->success()
                             ->send();
+                    }),
+
+                Action::make('renseignerProgression')
+                    ->label('Renseigner')
+                    ->icon('heroicon-o-book-open')
+                    ->color('success')
+                    ->visible(fn (Seance $record) => in_array($record->statut, ['dispensee', 'commencee'], true) && ! $record->progression_renseignee)
+                    ->url(fn (Seance $record) => ProgressionResource::getUrl('index', ['seance' => $record->id])),
+
+                Action::make('signalerIncident')
+                    ->label('Signaler un incident')
+                    ->icon('heroicon-o-exclamation-triangle')
+                    ->color('danger')
+                    ->form([
+                        Forms\Components\Select::make('eleve_id')->label('Élève')->searchable()->required()
+                            ->options(fn (Seance $record) => collect(app(EleveServiceInterface::class)->getElevesParClasse((int) $record->emploiDuTemps->classe_id))
+                                ->mapWithKeys(fn ($e) => [$e['id'] => trim(($e['nom'] ?? '').' '.($e['prenom'] ?? ''))])),
+                        Forms\Components\TextInput::make('type_incident')->label('Type d’incident')->required(),
+                        Forms\Components\Select::make('gravite')->label('Gravité')->options(['mineure' => 'Mineure', 'moyenne' => 'Moyenne', 'grave' => 'Grave', 'critique' => 'Critique'])->required(),
+                        Forms\Components\Textarea::make('description')->label('Description')->required(),
+                    ])
+                    ->action(function (Seance $record, array $data): void {
+                        DisciplineEleve::create($data + [
+                            'classe_id' => $record->emploiDuTemps->classe_id,
+                            'annee_scolaire_id' => $record->emploiDuTemps->annee_scolaire_id,
+                            'date_incident' => $record->date_seance,
+                            'confidentiel' => true,
+                            'enregistre_par' => auth()->id(),
+                        ]);
+                        Notification::make()->title('Incident enregistré')->success()->send();
                     }),
             ]);
     }

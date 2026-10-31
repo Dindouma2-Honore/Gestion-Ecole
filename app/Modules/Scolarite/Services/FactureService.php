@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Scolarite\Services;
 
+use App\Support\SafeFilename;
 use App\Modules\Scolarite\Contracts\FactureServiceInterface;
 use App\Modules\Scolarite\Contracts\FraisServiceContract;
 use App\Modules\Scolarite\Exceptions\FactureDejaGenereeException;
@@ -98,9 +99,11 @@ class FactureService implements FactureServiceInterface
         // de l'inscription, pas nécessairement l'année active courante.
         $anneeScolaire = $this->anneeScolaireService->getAnneeScolaire($inscription->annee_scolaire_id);
         $typeDocument = $type === 'definitive' ? 'facture' : 'facture_provisoire_scolarite';
-        $numero = $this->parametrageService->genererNumero($typeDocument, [
-            'ANNEE_SCOLAIRE' => $anneeScolaire->libelle,
-        ]);
+        do {
+            $numero = $this->parametrageService->genererNumero($typeDocument, [
+                'ANNEE_SCOLAIRE' => $anneeScolaire->libelle,
+            ]);
+        } while (FactureGeneree::where('numero', $numero)->exists());
 
         $facture = FactureGeneree::create([
             'inscription_id' => $inscription->id,
@@ -122,7 +125,7 @@ class FactureService implements FactureServiceInterface
         $facture->setRelation('inscription', $inscription);
         $document = $this->documentService->attacherContenu(
             $facture,
-            "Facture {$facture->numero}.html",
+            SafeFilename::make("Facture {$facture->numero}.html"),
             view('scolarite::filament.facture-impression', [
                 'facture' => $facture,
                 'detailFrais' => $this->fraisService->getDetailFrais($inscription->id),

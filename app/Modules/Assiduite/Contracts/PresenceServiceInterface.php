@@ -11,7 +11,7 @@ interface PresenceServiceInterface
      * personne (élève ou membre du personnel) à une date donnée.
      *
      * @return string présent | en_retard | absent_presume | absent_confirme
-     *                 | absence_justifiee | depart_anticipe | conge | mission
+     *                | absence_justifiee | depart_anticipe | conge | mission
      */
     public function getStatutJour(int $personneId, \DateTimeInterface $date): string;
 

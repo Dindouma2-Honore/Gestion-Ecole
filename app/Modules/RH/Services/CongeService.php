@@ -10,6 +10,7 @@ use App\Modules\RH\Models\Conge;
 use App\Modules\RH\Models\SoldeConge;
 use App\Modules\Socle\Contracts\AnneeScolaireServiceContract;
 use App\Modules\Socle\Contracts\ParametrageServiceContract;
+use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 
 class CongeService implements CongeServiceContract
@@ -19,8 +20,15 @@ class CongeService implements CongeServiceContract
         private readonly AnneeScolaireServiceContract $anneeScolaire
     ) {}
 
-    public function demanderConge(int $employeId, string $type, \DateTimeInterface $debut, \DateTimeInterface $fin, ?string $motif): object
+    public function demanderConge(int $employeId, string $type, \DateTimeInterface $debut, \DateTimeInterface $fin, ?string $motif, ?int $justificatifDocumentId = null): object
     {
+        $dateDebut = Carbon::instance($debut)->startOfDay();
+        $dateFin = Carbon::instance($fin)->startOfDay();
+
+        if ($dateFin->lt($dateDebut)) {
+            throw new \InvalidArgumentException('La date de fin doit être postérieure ou égale à la date de début.');
+        }
+
         $this->verifierChevauchement($employeId, $debut, $fin);
 
         $nombreJours = $this->calculerJoursOuvrables($debut, $fin);
@@ -36,6 +44,7 @@ class CongeService implements CongeServiceContract
             'date_fin' => $fin,
             'nombre_jours' => $nombreJours,
             'motif' => $motif,
+            'justificatif_document_id' => $justificatifDocumentId,
             'statut' => 'demande',
         ]);
     }
@@ -58,10 +67,13 @@ class CongeService implements CongeServiceContract
 
     private function verifierChevauchement(int $employeId, \DateTimeInterface $debut, \DateTimeInterface $fin): void
     {
+        $dDebut = $debut->format('Y-m-d');
+        $dFin = $fin->format('Y-m-d');
+
         $existe = Conge::where('employe_id', $employeId)
             ->whereIn('statut', ['demande', 'approuve', 'en_cours'])
-            ->where('date_debut', '<=', $fin)
-            ->where('date_fin', '>=', $debut)
+            ->whereDate('date_debut', '<=', $dFin)
+            ->whereDate('date_fin', '>=', $dDebut)
             ->exists();
 
         if ($existe) {
@@ -90,10 +102,12 @@ class CongeService implements CongeServiceContract
 
     public function estEnCongeAutorise(int $employeId, \DateTimeInterface $date): bool
     {
+        $d = $date->format('Y-m-d');
+
         return Conge::where('employe_id', $employeId)
             ->whereIn('statut', ['approuve', 'en_cours'])
-            ->where('date_debut', '<=', $date)
-            ->where('date_fin', '>=', $date)
+            ->whereDate('date_debut', '<=', $d)
+            ->whereDate('date_fin', '>=', $d)
             ->exists();
     }
 

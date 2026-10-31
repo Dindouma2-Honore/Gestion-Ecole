@@ -11,7 +11,13 @@ interface AnneeScolaireServiceContract extends AnneeScolaireServiceInterface
     /** Active une année scolaire (et clôture l'ancienne) dans une transaction atomique */
     public function activerAnnee(int $anneeScolaireId): void;
 
-    /** Clôture l'année active. */
+    /** Démarre une clôture contrôlée. */
+    public function demarrerClotureAnnee(int $anneeScolaireId): void;
+
+    /** Finalise une clôture contrôlée. */
+    public function finaliserClotureAnnee(int $anneeScolaireId): void;
+
+    /** Compatibilité legacy : clôture l'année en une opération. */
     public function cloturerAnnee(int $anneeScolaireId): void;
 
     /** Archive définitivement une année clôturée. */

@@ -64,13 +64,13 @@ class EnseignantService implements EnseignantServiceInterface
                 $q->where('annee_scolaire_id', $anneeId);
             }
         })
-        ->whereDoesntHave('remplacementsCommeAbsent', function ($q) use ($date) {
-            $q->where('date_debut', '<=', $date)
-              ->where(function ($q2) use ($date) {
-                  $q2->whereNull('date_fin')->orWhere('date_fin', '>=', $date);
-              });
-        })
-        ->get();
+            ->whereDoesntHave('remplacementsCommeAbsent', function ($q) use ($date) {
+                $q->where('date_debut', '<=', $date)
+                    ->where(function ($q2) use ($date) {
+                        $q2->whereNull('date_fin')->orWhere('date_fin', '>=', $date);
+                    });
+            })
+            ->get();
     }
 
     public function existe(int $enseignantId): bool
@@ -83,5 +83,10 @@ class EnseignantService implements EnseignantServiceInterface
         $enseignant = Enseignant::find($enseignantId);
 
         return (float) ($enseignant?->charge_horaire_hebdo ?? 0);
+    }
+
+    public function getEnseignantIdPourUtilisateur(int $userId): ?int
+    {
+        return Enseignant::whereHas('employe', fn ($q) => $q->where('user_id', $userId))->value('id');
     }
 }

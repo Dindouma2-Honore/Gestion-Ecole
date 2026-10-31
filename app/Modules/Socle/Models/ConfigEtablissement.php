@@ -11,7 +11,19 @@ class ConfigEtablissement extends Model
 {
     protected $table = 'config_etablissement';
 
-    protected $fillable = ['nom', 'logo_path', 'adresse', 'telephone', 'email', 'site_web', 'rccm', 'niu', 'devise'];
+    protected $fillable = [
+        'nom', 'sigle', 'logo_path', 'adresse', 'telephone', 'email', 'site_web',
+        'rccm', 'niu', 'devise', 'heure_ouverture', 'heure_fermeture',
+        'jours_ouvrables', 'tolerance_retard_minutes', 'systeme_notation',
+        'note_maximale', 'precision_arrondi', 'regles_evaluation',
+    ];
+
+    protected $casts = [
+        'jours_ouvrables' => 'array',
+        'note_maximale' => 'decimal:2',
+        'tolerance_retard_minutes' => 'integer',
+        'precision_arrondi' => 'integer',
+    ];
 
     /**
      * Retourne toujours l'unique ligne de configuration en cache.
@@ -33,7 +45,7 @@ class ConfigEtablissement extends Model
 
     protected static function booted(): void
     {
-        static::saved(fn() => Cache::forget('config_etablissement'));
-        static::deleted(fn() => Cache::forget('config_etablissement'));
+        static::saved(fn () => Cache::forget('config_etablissement'));
+        static::deleted(fn () => Cache::forget('config_etablissement'));
     }
 }

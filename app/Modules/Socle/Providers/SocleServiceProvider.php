@@ -7,18 +7,27 @@ namespace App\Modules\Socle\Providers;
 use App\Models\User;
 use App\Modules\Socle\Console\Commands\AlerterDocumentsExpirants;
 use App\Modules\Socle\Console\Commands\RelancerTachesEnRetard;
+use App\Modules\Socle\Contracts\AcademicCalendarContract;
+use App\Modules\Socle\Contracts\AcademicContextContract;
 use App\Modules\Socle\Contracts\AnneeScolaireServiceContract;
 use App\Modules\Socle\Contracts\AnneeScolaireServiceInterface;
 use App\Modules\Socle\Contracts\AuditServiceContract;
+use App\Modules\Socle\Contracts\AuditTrailContract;
+use App\Modules\Socle\Contracts\AuthenticatedAuthorizationContract;
+use App\Modules\Socle\Contracts\AuthorizationContract;
+use App\Modules\Socle\Contracts\AuthorizationPositionResolverContract;
+use App\Modules\Socle\Contracts\CalendrierPedagogiqueReadContract;
 use App\Modules\Socle\Contracts\CourrierServiceContract;
 use App\Modules\Socle\Contracts\DocumentServiceContract;
 use App\Modules\Socle\Contracts\DocumentTemplateServiceContract;
+use App\Modules\Socle\Contracts\DocumentVaultContract;
 use App\Modules\Socle\Contracts\GroupeServiceContract;
 use App\Modules\Socle\Contracts\HabilitationServiceContract;
 use App\Modules\Socle\Contracts\NumerotationServiceContract;
 use App\Modules\Socle\Contracts\Observers\VerrouAnneeObserver;
 use App\Modules\Socle\Contracts\ParametrageServiceContract;
 use App\Modules\Socle\Contracts\ReunionServiceContract;
+use App\Modules\Socle\Contracts\SchoolProfileContract;
 use App\Modules\Socle\Contracts\TacheServiceContract;
 use App\Modules\Socle\Contracts\TransfertElevesAnneeContract;
 use App\Modules\Socle\Contracts\UserAuthorizationServiceContract;
@@ -27,6 +36,7 @@ use App\Modules\Socle\Contracts\WorkflowServiceContract;
 use App\Modules\Socle\Http\Controllers\DownloadDocumentController;
 use App\Modules\Socle\Http\Controllers\PeriodesScolairesController;
 use App\Modules\Socle\Http\Middleware\EnsureUserIsActive;
+use App\Modules\Socle\Listeners\RecordAuthenticationActivity;
 use App\Modules\Socle\Listeners\UpdateDerniereConnexion;
 use App\Modules\Socle\Models\ActivityLog;
 use App\Modules\Socle\Models\AnneeScolaire;
@@ -34,7 +44,6 @@ use App\Modules\Socle\Models\ConfigEtablissement;
 use App\Modules\Socle\Models\Document;
 use App\Modules\Socle\Models\FormatNumerotation;
 use App\Modules\Socle\Models\JourFerie;
-use App\Modules\Socle\Models\Niveau;
 use App\Modules\Socle\Models\Periode;
 use App\Modules\Socle\Models\SeuilValidation;
 use App\Modules\Socle\Models\TemplateDocument;
@@ -44,16 +53,25 @@ use App\Modules\Socle\Policies\AuditLogPolicy;
 use App\Modules\Socle\Policies\DocumentPolicy;
 use App\Modules\Socle\Policies\ParametragePolicy;
 use App\Modules\Socle\Policies\UserPolicy;
+use App\Modules\Socle\Services\AcademicCalendarService;
+use App\Modules\Socle\Services\AcademicContextManager;
 use App\Modules\Socle\Services\AnneeScolaireService;
 use App\Modules\Socle\Services\AuditService;
+use App\Modules\Socle\Services\AuditTrailService;
+use App\Modules\Socle\Services\AuthenticatedAuthorizationService;
+use App\Modules\Socle\Services\AuthorizationService;
+use App\Modules\Socle\Services\CalendrierPedagogiqueReadService;
 use App\Modules\Socle\Services\CourrierService;
 use App\Modules\Socle\Services\DocumentService;
 use App\Modules\Socle\Services\DocumentTemplateService;
+use App\Modules\Socle\Services\DocumentVaultService;
 use App\Modules\Socle\Services\GroupeService;
 use App\Modules\Socle\Services\HabilitationService;
+use App\Modules\Socle\Services\NullAuthorizationPositionResolver;
 use App\Modules\Socle\Services\NumerotationService;
 use App\Modules\Socle\Services\ParametrageService;
 use App\Modules\Socle\Services\ReunionService;
+use App\Modules\Socle\Services\SchoolProfileService;
 use App\Modules\Socle\Services\TacheService;
 use App\Modules\Socle\Services\TransfertElevesIndisponible;
 use App\Modules\Socle\Services\UserAuthorizationService;
@@ -61,7 +79,9 @@ use App\Modules\Socle\Services\UtilisateurService;
 use App\Modules\Socle\Services\WorkflowService;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
+use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
@@ -71,15 +91,25 @@ class SocleServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->bind(CalendrierPedagogiqueReadContract::class, CalendrierPedagogiqueReadService::class);
+        $this->app->bind(AuthorizationContract::class, AuthorizationService::class);
+        $this->app->bind(AuthenticatedAuthorizationContract::class, AuthenticatedAuthorizationService::class);
+        $this->app->bind(AuthorizationPositionResolverContract::class, NullAuthorizationPositionResolver::class);
         $this->app->bind(UtilisateurServiceInterface::class, UtilisateurService::class);
         $this->app->bind(UserAuthorizationServiceContract::class, UserAuthorizationService::class);
         $this->app->bind(ParametrageServiceContract::class, ParametrageService::class);
+        $this->app->bind(SchoolProfileContract::class, SchoolProfileService::class);
+        $this->app->bind(AcademicCalendarContract::class, AcademicCalendarService::class);
+        $this->app->bind(AcademicContextContract::class, AcademicContextManager::class);
         $this->app->bind(AnneeScolaireServiceInterface::class, AnneeScolaireService::class);
         $this->app->bind(AnneeScolaireServiceContract::class, AnneeScolaireService::class);
         $this->app->bind(AuditServiceContract::class, AuditService::class);
+        $this->app->bind(AuditTrailContract::class, AuditTrailService::class);
         $this->app->bind(DocumentServiceContract::class, DocumentService::class);
+        $this->app->bind(DocumentVaultContract::class, DocumentVaultService::class);
         $this->app->bind(DocumentTemplateServiceContract::class, DocumentTemplateService::class);
         $this->app->bind(WorkflowServiceContract::class, WorkflowService::class);
+
         $this->app->bind(NumerotationServiceContract::class, NumerotationService::class);
         $this->app->singleton(HabilitationServiceContract::class, HabilitationService::class);
         $this->app->singleton(GroupeServiceContract::class, GroupeService::class);
@@ -95,7 +125,6 @@ class SocleServiceProvider extends ServiceProvider
         Gate::policy(User::class, UserPolicy::class);
         foreach ([
             ConfigEtablissement::class,
-            Niveau::class,
             FormatNumerotation::class,
             TemplateDocument::class,
             TemplateNotification::class,
@@ -110,6 +139,9 @@ class SocleServiceProvider extends ServiceProvider
         Gate::policy(ActivityLog::class, AuditLogPolicy::class);
         Gate::policy(Document::class, DocumentPolicy::class);
         Event::listen(Login::class, UpdateDerniereConnexion::class);
+        Event::listen(Login::class, [RecordAuthenticationActivity::class, 'handle']);
+        Event::listen(Failed::class, [RecordAuthenticationActivity::class, 'handle']);
+        Event::listen(Logout::class, [RecordAuthenticationActivity::class, 'handle']);
         Periode::observe(VerrouAnneeObserver::class);
 
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'socle');

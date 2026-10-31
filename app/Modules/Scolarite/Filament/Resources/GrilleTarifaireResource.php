@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Scolarite\Filament\Resources;
 
 use App\Modules\Scolarite\Filament\Resources\GrilleTarifaireResource\Pages;
+use App\Modules\Scolarite\Filament\Support\ScolariteActions;
 use App\Modules\Scolarite\Models\Classe;
 use App\Modules\Scolarite\Models\Frais;
 use App\Modules\Scolarite\Models\GrilleTarifaire;
 use BackedEnum;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
@@ -31,13 +30,15 @@ class GrilleTarifaireResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-table-cells';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Scolarité';
+    protected static string|UnitEnum|null $navigationGroup = 'Frais scolaires';
 
-    protected static ?string $navigationLabel = 'Grille tarifaire';
+    protected static ?string $navigationLabel = 'Grilles tarifaires';
+
+    protected static ?int $navigationSort = 3;
 
     protected static ?string $modelLabel = 'tarif';
 
-    protected static ?string $pluralModelLabel = 'grille tarifaire';
+    protected static ?string $pluralModelLabel = 'grilles tarifaires';
 
     public static function form(Schema $schema): Schema
     {
@@ -72,6 +73,7 @@ class GrilleTarifaireResource extends Resource
     public static function table(Table $table): Table
     {
         $annees = self::optionsAnneesScolaires();
+        ScolariteActions::configureTable($table, 'edit');
 
         return $table
             ->columns([
@@ -95,8 +97,9 @@ class GrilleTarifaireResource extends Resource
                     ->options(fn () => self::optionsAnneesScolaires()),
             ])
             ->actions([
-                EditAction::make(),
-                DeleteAction::make(),
+                ScolariteActions::edit(),
+                ScolariteActions::view(),
+                ScolariteActions::delete(),
             ]);
     }
 

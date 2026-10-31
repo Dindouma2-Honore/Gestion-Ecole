@@ -22,7 +22,7 @@ class RelancePaiementResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-megaphone';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Finances';
+    protected static string|\UnitEnum|null $navigationGroup = 'Scolarité';
 
     protected static ?string $navigationLabel = 'Recouvrement';
 

@@ -17,4 +17,6 @@ interface EnseignantServiceInterface
     public function existe(int $enseignantId): bool;
 
     public function getChargeHoraire(int $enseignantId): float;
+
+    public function getEnseignantIdPourUtilisateur(int $userId): ?int;
 }

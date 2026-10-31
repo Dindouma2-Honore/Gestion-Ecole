@@ -11,7 +11,7 @@ class CategoriePersonnel extends Model
 
     protected $guarded = [];
 
-    protected $casts = ['actif' => 'boolean', 'progression_automatique' => 'boolean'];
+    protected $casts = ['actif' => 'boolean'];
 
     public function employes(): BelongsToMany
     {

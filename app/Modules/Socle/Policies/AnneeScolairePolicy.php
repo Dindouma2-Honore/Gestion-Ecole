@@ -6,6 +6,7 @@ namespace App\Modules\Socle\Policies;
 
 use App\Models\User;
 use App\Modules\Socle\Contracts\ModulePolicy;
+use App\Modules\Socle\Enums\AcademicYearStatus;
 use App\Modules\Socle\Models\AnneeScolaire;
 
 class AnneeScolairePolicy implements ModulePolicy
@@ -32,11 +33,11 @@ class AnneeScolairePolicy implements ModulePolicy
 
     public function update(User $user, AnneeScolaire $annee): bool
     {
-        return $this->viewAny($user) && $annee->statut !== AnneeScolaire::STATUT_ARCHIVEE;
+        return $this->viewAny($user) && ! $annee->isReadonly();
     }
 
     public function delete(User $user, AnneeScolaire $annee): bool
     {
-        return $this->viewAny($user) && $annee->statut === AnneeScolaire::STATUT_BROUILLON;
+        return $this->viewAny($user) && $annee->status === AcademicYearStatus::PREPARATION;
     }
 }

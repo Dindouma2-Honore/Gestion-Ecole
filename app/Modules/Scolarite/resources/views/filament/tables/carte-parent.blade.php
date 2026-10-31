@@ -6,7 +6,7 @@
     $label = $record->telephone ?: ($record->email ?: 'Aucun contact');
     $badge = $record->portail_actif ? 'Portail actif' : 'Portail inactif';
 @endphp
-<a href="{{ \App\Modules\Scolarite\Filament\Resources\ParentTuteurResource::getUrl('edit', ['record' => $record]) }}" class="block">
+<a href="{{ \App\Modules\Scolarite\Filament\Resources\ParentTuteurResource::getUrl('view', ['record' => $record]) }}" class="block">
     <x-ambassadors-card
         icon="heroicon-o-users"
         :label="$label"

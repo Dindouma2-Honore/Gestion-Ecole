@@ -11,7 +11,7 @@ interface PaiementServiceContract
     /**
      * @param  array<string, mixed>  $contexteRecu  Informations métier optionnelles à afficher sur le reçu.
      */
-    public function enregistrerPaiement(int $eleveId, float $montant, string $mode, ?string $referenceMobileMoney = null, array $contexteRecu = []): object;
+    public function enregistrerPaiement(int $inscriptionId, float $montant, string $mode, ?string $referenceMobileMoney = null, array $contexteRecu = []): object;
 
     /** @return array{nom:string, contenu:string} */
     public function getRecuPdf(int $paiementId): array;

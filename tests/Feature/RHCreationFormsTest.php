@@ -4,9 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Modules\RH\Filament\Resources\BulletinPaieResource\Pages\CreateBulletinPaie;
-use App\Modules\RH\Filament\Resources\PrimeResource\Pages\CreatePrime;
-use App\Modules\RH\Filament\Resources\SanctionPersonnelResource\Pages\CreateSanctionPersonnel;
-use App\Modules\RH\Filament\Resources\TypePrimeResource\Pages\CreateTypePrime;
+use App\Modules\RH\Filament\Resources\PrimeResource\Pages\ListPrimes;
+use App\Modules\RH\Filament\Resources\SanctionPersonnelResource\Pages\ListSanctionPersonnels;
+use App\Modules\RH\Filament\Resources\TypePrimeResource\Pages\ListTypePrimes;
 use App\Modules\RH\Models\Contrat;
 use App\Modules\RH\Models\Employe;
 use App\Modules\RH\Models\TypePrime;
@@ -55,7 +55,8 @@ class RHCreationFormsTest extends TestCase
 
     public function test_peut_creer_discipline_du_personnel(): void
     {
-        Livewire::test(CreateSanctionPersonnel::class)
+        Livewire::test(ListSanctionPersonnels::class)
+            ->mountAction('create')
             ->fillForm([
                 'employe_id' => $this->employe->id,
                 'type' => 'avertissement_verbal',
@@ -63,7 +64,7 @@ class RHCreationFormsTest extends TestCase
                 'date_sanction' => '2026-08-25',
                 'statut' => 'en_attente_validation',
             ])
-            ->call('create')
+            ->callMountedAction()->assertNoRedirect()
             ->assertHasNoFormErrors();
 
         $this->assertDatabaseHas('sanctions_personnel', [
@@ -76,13 +77,14 @@ class RHCreationFormsTest extends TestCase
 
     public function test_peut_creer_type_de_prime(): void
     {
-        Livewire::test(CreateTypePrime::class)
+        Livewire::test(ListTypePrimes::class)
+            ->mountAction('create')
             ->fillForm([
                 'libelle' => 'Prime Exceptionnelle',
                 'mode_calcul' => 'montant_fixe',
                 'valeur_defaut' => 50000,
             ])
-            ->call('create')
+            ->callMountedAction()->assertNoRedirect()
             ->assertHasNoFormErrors();
 
         $this->assertDatabaseHas('types_primes', [
@@ -103,7 +105,8 @@ class RHCreationFormsTest extends TestCase
             'valeur_defaut' => 25000,
         ]);
 
-        Livewire::test(CreatePrime::class)
+        Livewire::test(ListPrimes::class)
+            ->mountAction('create')
             ->fillForm([
                 'employe_id' => $this->employe->id,
                 'type_prime_id' => $typePrime->id,
@@ -113,7 +116,7 @@ class RHCreationFormsTest extends TestCase
                 'justification' => 'Performance excellente',
                 'statut' => 'proposee',
             ])
-            ->call('create')
+            ->callMountedAction()->assertNoRedirect()
             ->assertHasNoFormErrors();
 
         $this->assertDatabaseHas('primes', [

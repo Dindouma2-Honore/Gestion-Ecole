@@ -2,6 +2,7 @@
 
 namespace App\Modules\Assiduite\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Modules\Assiduite\Filament\Resources\DossierSanteResource\Pages;
 use App\Modules\Assiduite\Models\DossierSante;
 use Filament\Forms\Components\Select;
@@ -14,6 +15,8 @@ use Filament\Tables\Table;
 
 class DossierSanteResource extends Resource
 {
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $model = DossierSante::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-heart';
@@ -59,14 +62,14 @@ class DossierSanteResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordModal::configure($table
             ->columns([
                 TextColumn::make('eleve.nom')->label('Élève')->sortable()->searchable(),
                 TextColumn::make('groupe_sanguin')->sortable(),
                 TextColumn::make('allergies')->limit(30),
                 TextColumn::make('contact_urgence_nom')->label('Contact Urgence'),
                 TextColumn::make('contact_urgence_telephone')->label('Téléphone'),
-            ]);
+            ]), static::class);
     }
 
     public static function getPages(): array

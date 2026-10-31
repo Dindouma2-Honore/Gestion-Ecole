@@ -7,7 +7,7 @@
        @class(['is-active' => $active === 'roles'])
        @if($active === 'roles') aria-current="page" @endif>
         <x-filament::icon icon="heroicon-o-identification" />
-        Rôles du personnel
+        Habilitation du personnel
     </a>
 
     <a href="{{ \App\Modules\Socle\Filament\Pages\ManageGroupePermissions::getUrl() }}"

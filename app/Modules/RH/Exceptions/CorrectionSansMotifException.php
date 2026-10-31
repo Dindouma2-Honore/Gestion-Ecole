@@ -8,6 +8,6 @@ class CorrectionSansMotifException extends Exception
 {
     public function __construct()
     {
-        parent::__construct("Un motif est obligatoire pour toute correction manuelle de pointage.");
+        parent::__construct('Un motif est obligatoire pour toute correction manuelle de pointage.');
     }
 }

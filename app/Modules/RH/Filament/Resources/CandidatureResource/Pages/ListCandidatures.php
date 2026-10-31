@@ -2,8 +2,9 @@
 
 namespace App\Modules\RH\Filament\Resources\CandidatureResource\Pages;
 
+use App\Filament\Support\AmbassadorsDesign;
 use App\Modules\RH\Filament\Resources\CandidatureResource;
-use Filament\Actions\CreateAction;
+use App\Modules\RH\Filament\Support\RhActions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListCandidatures extends ListRecords
@@ -12,6 +13,13 @@ class ListCandidatures extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [CreateAction::make()->label('Nouvelle candidature')];
+        return [
+            RhActions::create()
+                ->label('Nouvelle candidature')
+                ->modal(true)
+                ->modalHeading('Nouvelle candidature')
+                ->modalWidth('none')->extraModalWindowAttributes(AmbassadorsDesign::goldenModalAttributes())
+                ->createAnother(false),
+        ];
     }
 }

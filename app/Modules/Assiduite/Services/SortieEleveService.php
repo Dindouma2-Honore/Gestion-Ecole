@@ -29,7 +29,7 @@ class SortieEleveService implements SortieEleveServiceContract
             ->where('autorise_recuperation', true)
             ->exists();
 
-        if (!$estAutorise) {
+        if (! $estAutorise) {
             throw new PersonneNonAutoriseeException($parentId, $eleveId);
         }
 

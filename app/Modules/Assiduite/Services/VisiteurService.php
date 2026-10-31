@@ -50,7 +50,8 @@ class VisiteurService implements VisiteurServiceContract
             ->get(['parents_tuteurs.nom', 'parents_tuteurs.prenom']);
 
         return $personnesAutorisees->contains(function ($personne) use ($nomVisiteur) {
-            $nomComplet = strtolower(trim(($personne->nom ?? '') . ' ' . ($personne->prenom ?? '')));
+            $nomComplet = strtolower(trim(($personne->nom ?? '').' '.($personne->prenom ?? '')));
+
             return str_contains($nomComplet, strtolower(trim($nomVisiteur)));
         });
     }

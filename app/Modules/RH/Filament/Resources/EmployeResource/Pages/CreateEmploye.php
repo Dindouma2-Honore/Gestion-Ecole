@@ -5,9 +5,11 @@ namespace App\Modules\RH\Filament\Resources\EmployeResource\Pages;
 use App\Modules\RH\Contracts\EmployeServiceContract;
 use App\Modules\RH\Filament\Resources\EmployeResource;
 use App\Modules\RH\Models\Candidature;
+use App\Modules\RH\Models\PosteAdministratif;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Permission\Models\Role;
 
 class CreateEmploye extends CreateRecord
 {
@@ -25,13 +27,16 @@ class CreateEmploye extends CreateRecord
         }
 
         $candidature = Candidature::query()->where('statut', 'retenue')->findOrFail($candidatureId);
+        $posteAdminId = PosteAdministratif::query()->where('nom', $candidature->poste_souhaite)->value('id');
         $this->form->fill(array_merge($this->data, [
+            'candidature_id' => $candidature->id,
             'nom' => $candidature->nom,
             'prenom' => $candidature->prenom,
             'email' => $candidature->email,
             'telephone' => $candidature->telephone,
+            'poste_administratif_id' => $posteAdminId,
             'poste' => $candidature->poste_souhaite,
-            'date_embauche' => now()->toDateString(),
+            'role_id' => Role::query()->where('name', $candidature->poste_souhaite)->value('id'),
             'date_debut_contrat' => now()->toDateString(),
             'statut' => 'actif',
         ]));
@@ -39,25 +44,28 @@ class CreateEmploye extends CreateRecord
 
     protected function handleRecordCreation(array $data): Model
     {
-        $resultat = app(EmployeServiceContract::class)->embaucher($data);
-        $this->motDePasseTemporaire = $resultat['mot_de_passe_temporaire'];
+        try {
+            $resultat = app(EmployeServiceContract::class)->embaucher($data);
+            $this->motDePasseTemporaire = $resultat['mot_de_passe_temporaire'];
 
-        if ($candidatureId = request()->integer('candidature')) {
-            Candidature::query()->whereKey($candidatureId)->where('statut', 'retenue')->update([
-                'statut' => 'embauche',
-                'employe_id' => $resultat['employe']->id,
-            ]);
+            return $resultat['employe'];
+        } catch (\Throwable $e) {
+            Notification::make()
+                ->title('Erreur lors de l’intégration')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+
+            $this->halt();
         }
-
-        return $resultat['employe'];
     }
 
     protected function getCreatedNotification(): ?Notification
     {
         return Notification::make()
             ->success()
-            ->title('Embauche finalisée')
-            ->body("Le dossier, le compte et le contrat ont été créés. Mot de passe temporaire : {$this->motDePasseTemporaire}")
+            ->title('Intégration finalisée')
+            ->body("Le membre du personnel, son compte et son contrat ont été créés. Mot de passe temporaire : {$this->motDePasseTemporaire}")
             ->persistent();
     }
 }

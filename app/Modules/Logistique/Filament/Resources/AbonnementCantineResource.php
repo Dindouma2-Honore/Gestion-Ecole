@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Logistique\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Modules\Logistique\Filament\Resources\AbonnementCantineResource\Pages;
 use App\Modules\Logistique\Models\AbonnementCantine;
 use BackedEnum;
@@ -16,6 +17,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 use UnitEnum;
 
 class AbonnementCantineResource extends Resource
@@ -27,6 +29,8 @@ class AbonnementCantineResource extends Resource
     protected static string|UnitEnum|null $navigationGroup = 'Logistique';
 
     protected static ?string $navigationLabel = 'Abonnements cantine';
+
+    protected static bool $shouldRegisterNavigation = false;
 
     protected static ?string $modelLabel = 'abonnement cantine';
 
@@ -41,16 +45,10 @@ class AbonnementCantineResource extends Resource
     {
         return $schema
             ->components([
-                TextInput::make('eleve_id')
-                    ->label('ID élève')
-                    ->numeric()
-                    ->required()
-                    ->helperText('En attendant un Select alimenté par le module Scolarité.'),
-                  TextInput::make('annee_scolaire_id')
-    ->label('ID année scolaire')
-    ->numeric()
-    ->required()
-    ->helperText('En attendant un Select alimenté par AnneeScolaireServiceContract (Socle).'),
+                Select::make('eleve_id')->label('Élève')->searchable()->preload()
+                    ->options(fn () => DB::table('eleves')->whereNull('deleted_at')->orderBy('nom')->get()->mapWithKeys(fn ($e) => [$e->id => trim("{$e->nom} {$e->prenom}")." — {$e->matricule_permanent}"])->all())->required(),
+                Select::make('annee_scolaire_id')->label('Année scolaire')
+                    ->options(fn () => DB::table('annee_scolaires')->orderByDesc('date_debut')->pluck('libelle', 'id')->all())->required(),
                 Select::make('type')
                     ->label('Type')
                     ->options(['mensuel' => 'Mensuel', 'trimestriel' => 'Trimestriel', 'annuel' => 'Annuel'])
@@ -70,9 +68,9 @@ class AbonnementCantineResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        $table = $table
             ->columns([
-                Tables\Columns\TextColumn::make('eleve_id')->label('Élève (ID)'),
+                Tables\Columns\TextColumn::make('eleve_id')->label('Élève')->formatStateUsing(fn ($state) => optional(DB::table('eleves')->find($state))->nom ?? '—'),
                 Tables\Columns\TextColumn::make('type')->label('Type')->badge(),
                 Tables\Columns\TextColumn::make('date_debut')->label('Début')->date(),
                 Tables\Columns\TextColumn::make('date_fin')->label('Fin')->date(),
@@ -95,6 +93,8 @@ class AbonnementCantineResource extends Resource
             ->actions([
                 EditAction::make(),
             ]);
+
+        return RecordModal::configure($table, static::class);
     }
 
     public static function getPages(): array

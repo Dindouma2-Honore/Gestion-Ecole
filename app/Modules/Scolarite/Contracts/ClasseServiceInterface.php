@@ -23,4 +23,11 @@ interface ClasseServiceInterface
      * @return array<int, array{id: int, nom: string}>
      */
     public function getToutesLesClasses(int $anneeScolaireId): array;
+
+    /**
+     * Retourne toutes les classes d'un niveau donné pour une année scolaire.
+     *
+     * @return array<int, array{id: int, nom: string}>
+     */
+    public function getClassesParNiveau(int $niveauId, int $anneeScolaireId): array;
 }

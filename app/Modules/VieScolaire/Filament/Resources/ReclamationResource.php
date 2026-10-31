@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\VieScolaire\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Modules\VieScolaire\Models\Reclamation;
 use BackedEnum;
-use Filament\Forms\Components\Select;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
@@ -15,6 +16,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 use UnitEnum;
 
 class ReclamationResource extends Resource
@@ -28,6 +30,8 @@ class ReclamationResource extends Resource
     protected static ?string $navigationLabel = 'Réclamations & incidents';
 
     protected static ?string $modelLabel = 'réclamation';
+
+    protected static bool $shouldRegisterNavigation = false;
 
     public static function form(Schema $schema): Schema
     {
@@ -58,16 +62,13 @@ class ReclamationResource extends Resource
                     ->default('normale')
                     ->required(),
 
-                TextInput::make('responsable_id')
-                    ->label('ID responsable')
-                    ->numeric()
-                    ->helperText('Renseigné automatiquement à l\'affectation via ReclamationServiceInterface::affecter().'),
+                Select::make('responsable_id')->label('Responsable')->searchable()->preload()->options(fn () => DB::table('users')->orderBy('name')->pluck('name', 'id')->all()),
             ]);
     }
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordModal::configure($table
             ->columns([
                 Tables\Columns\TextColumn::make('type')->label('Type')->badge(),
                 Tables\Columns\TextColumn::make('categorie')->label('Catégorie')->placeholder('—'),
@@ -97,7 +98,7 @@ class ReclamationResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->actions([
                 EditAction::make(),
-            ]);
+            ]), static::class);
     }
 
     public static function getPages(): array

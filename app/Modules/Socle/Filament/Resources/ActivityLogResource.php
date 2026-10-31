@@ -14,6 +14,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 class ActivityLogResource extends Resource
 {
@@ -23,7 +24,7 @@ class ActivityLogResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Audit & sécurité';
 
-    protected static ?string $navigationLabel = 'Audit et traçabilité';
+    protected static ?string $navigationLabel = 'Journaux & historique';
 
     protected static ?string $modelLabel = 'Journal d’audit';
 
@@ -61,7 +62,17 @@ class ActivityLogResource extends Resource
                 TextColumn::make('causer.name')->label('Acteur')->placeholder('Système')->searchable(),
                 TextColumn::make('ip_address')->label('Adresse IP')->placeholder('—'),
                 TextColumn::make('motif')->label('Motif')->placeholder('—')->limit(60)->wrap(),
-                TextColumn::make('properties')->label('Changements')->formatStateUsing(fn ($state): string => json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}')->limit(100)->wrap(),
+                TextColumn::make('properties')->label('Anciennes / nouvelles valeurs')->formatStateUsing(function ($state): string {
+                    $values = $state instanceof Collection ? $state->all() : (array) $state;
+                    $old = $values['old'] ?? $values['attributes']['old'] ?? null;
+                    $new = $values['new'] ?? $values['attributes'] ?? null;
+
+                    if ($old || $new) {
+                        return 'Avant : '.json_encode($old, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES).' | Après : '.json_encode($new, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    }
+
+                    return json_encode($values, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '—';
+                })->limit(160)->wrap()->tooltip(fn ($state): string => json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '—'),
             ])
             ->filters([
                 SelectFilter::make('subject_type')

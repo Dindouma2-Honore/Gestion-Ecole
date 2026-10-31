@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Finances\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Modules\Finances\Filament\Resources\GrilleSalarialeResource\Pages;
 use App\Modules\Finances\Models\GrilleSalariale;
 use Filament\Actions\DeleteAction;
@@ -43,7 +44,7 @@ class GrilleSalarialeResource extends Resource
                 ->icon('heroicon-o-identification')
                 ->columns(2)
                 ->schema([
-                    Select::make('categorie_personnel_id')->label('Catégorie d’ancienneté')->options(fn () => DB::table('categories_personnel')->where('progression_automatique', true)->orderBy('anciennete_min_mois')->pluck('nom', 'id')->all())->required()->searchable(),
+                    Select::make('palier_anciennete_id')->label('Palier d’ancienneté')->options(fn () => DB::table('paliers_anciennete')->where('actif', true)->orderBy('anciennete_min_mois')->pluck('nom', 'id')->all())->required()->searchable(),
                     Select::make('base_calcul')->label('Champ d’application')->options(self::basesCalcul())->required()->live(),
                     Select::make('matiere_id')->label('Matière enseignée')->options(fn () => DB::table('matieres')->where('actif', true)->orderBy('nom')->pluck('nom', 'id')->all())->searchable()->visible(fn (Get $get) => $get('base_calcul') === 'matiere')->required(fn (Get $get) => $get('base_calcul') === 'matiere'),
                     Select::make('poste_administratif_id')->label('Fonction administrative')->options(fn () => DB::table('poste_administratifs')->orderBy('nom')->pluck('nom', 'id')->all())->searchable()->visible(fn (Get $get) => $get('base_calcul') === 'fonction')->required(fn (Get $get) => $get('base_calcul') === 'fonction'),
@@ -70,7 +71,7 @@ class GrilleSalarialeResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table->columns([
+        return RecordModal::configure($table->columns([
             TextColumn::make('categorie_nom')->label('Palier')->badge()->color(fn (?string $state): string => match ($state) {
                 'Junior' => 'info', 'Confirmé' => 'success', 'Senior' => 'warning', 'Expert' => 'danger', default => 'gray'
             })->sortable(),
@@ -83,7 +84,7 @@ class GrilleSalarialeResource extends Resource
             TextColumn::make('source')->label('Référence')->wrap()->limit(45)->tooltip(fn (GrilleSalariale $record): ?string => $record->source)->toggleable(),
         ])
             ->filters([
-                SelectFilter::make('categorie_personnel_id')->label('Catégorie')->options(fn () => DB::table('categories_personnel')->orderBy('anciennete_min_mois')->pluck('nom', 'id')->all()),
+                SelectFilter::make('palier_anciennete_id')->label('Palier')->options(fn () => DB::table('paliers_anciennete')->orderBy('anciennete_min_mois')->pluck('nom', 'id')->all()),
                 SelectFilter::make('base_calcul')->label('Champ d’application')->options(self::basesCalcul()),
                 TernaryFilter::make('actif')->label('État')->trueLabel('Actives')->falseLabel('Inactives')->placeholder('Toutes'),
             ])
@@ -91,7 +92,7 @@ class GrilleSalarialeResource extends Resource
             ->emptyStateHeading('Aucune ligne salariale')
             ->emptyStateDescription('Ajoutez une ligne pour définir le salaire de base ou le taux horaire d’un palier.')
             ->emptyStateIcon('heroicon-o-table-cells')
-            ->actions([EditAction::make()->label('Modifier'), DeleteAction::make()->label('Supprimer')]);
+            ->actions([EditAction::make()->label('Modifier'), DeleteAction::make()->label('Supprimer')]), static::class);
     }
 
     public static function getPages(): array

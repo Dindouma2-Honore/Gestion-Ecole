@@ -13,7 +13,7 @@ class ExemplaireLivre extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'livre_id', 'code_exemplaire', 'etat', 'disponible',
+        'livre_id', 'code_exemplaire', 'localisation', 'etat', 'statut', 'disponible',
     ];
 
     protected $casts = [

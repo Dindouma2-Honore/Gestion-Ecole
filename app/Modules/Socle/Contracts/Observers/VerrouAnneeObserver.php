@@ -8,7 +8,6 @@ use App\Modules\Socle\Contracts\AnneeScolaireServiceContract;
 use App\Modules\Socle\Contracts\RattacheAAnneeScolaire;
 use App\Modules\Socle\Exceptions\AnneeVerrouilleeException;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
 use Throwable;
 
 class VerrouAnneeObserver
@@ -42,16 +41,12 @@ class VerrouAnneeObserver
             return;
         }
 
-        if (! in_array($annee->statut, ['cloturee', 'archivee'], true)) {
+        $status = $annee->status ?? $annee->statut;
+        $status = $status instanceof \BackedEnum ? $status->value : $status;
+        if (! in_array($status, ['cloturee', 'archivee'], true)) {
             return;
         }
 
-        // Exception : le Fondateur peut corriger une année clôturée (jamais archivée)
-        $user = Auth::user();
-        if ($annee->statut === 'cloturee' && $user && method_exists($user, 'hasRole') && $user->hasRole('Fondateur')) {
-            return;
-        }
-
-        throw new AnneeVerrouilleeException($annee->libelle, $annee->statut);
+        throw new AnneeVerrouilleeException($annee->libelle, $status);
     }
 }

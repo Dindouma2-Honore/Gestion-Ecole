@@ -4,6 +4,7 @@ use App\Modules\Logistique\Contracts\TransportServiceInterface;
 use App\Modules\Logistique\Exceptions\CapaciteVehiculeDepasseeException;
 use App\Modules\Logistique\Models\ArretCircuit;
 use App\Modules\Logistique\Models\CircuitTransport;
+use App\Modules\Logistique\Models\PresenceTransport;
 use App\Modules\Logistique\Models\Vehicule;
 use App\Modules\Socle\Models\AnneeScolaire;
 
@@ -45,7 +46,7 @@ it('enregistre une présence au trajet du matin', function () {
 
     $this->service->enregistrerPresenceTrajet($inscription->id, 'matin', present: true);
 
-    expect(\App\Modules\Logistique\Models\PresenceTransport::where('inscription_transport_id', $inscription->id)->exists())->toBeTrue();
+    expect(PresenceTransport::where('inscription_transport_id', $inscription->id)->exists())->toBeTrue();
 });
 
 it('signale un incident sur un circuit', function () {

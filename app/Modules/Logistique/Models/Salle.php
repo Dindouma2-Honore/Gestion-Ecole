@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Logistique\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * La table `salles` a déjà été créée en D.26 (Emplois du temps) avec ses
@@ -19,6 +20,24 @@ class Salle extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'nom', 'type', 'capacite', 'niveau_id', 'etat',
+        'code', 'nom', 'batiment', 'zone', 'type', 'capacite', 'niveau_id',
+        'responsable_id', 'etat', 'disponible', 'observations',
     ];
+
+    protected $casts = ['disponible' => 'boolean'];
+
+    public function equipements(): HasMany
+    {
+        return $this->hasMany(Equipement::class);
+    }
+
+    public function travaux(): HasMany
+    {
+        return $this->hasMany(TravauxInfrastructure::class);
+    }
+
+    public function interventions(): HasMany
+    {
+        return $this->hasMany(DemandeIntervention::class);
+    }
 }

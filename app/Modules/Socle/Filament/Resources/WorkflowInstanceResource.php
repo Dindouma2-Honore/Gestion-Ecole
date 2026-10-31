@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class WorkflowInstanceResource extends Resource
 {
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $model = WorkflowInstance::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-inbox-stack';

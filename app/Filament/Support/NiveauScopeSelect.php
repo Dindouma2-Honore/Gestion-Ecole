@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Support;
 
-use App\Modules\Socle\Contracts\ParametrageServiceContract;
+use App\Modules\Scolarite\Contracts\AcademicStructureCatalogContract;
 use Filament\Forms\Components\Select;
 
 /**
@@ -20,8 +20,8 @@ final class NiveauScopeSelect
     {
         return Select::make($name)
             ->label('Niveau concerné')
-            ->options(fn (): array => collect(app(ParametrageServiceContract::class)->getTousLesNiveaux())
-                ->pluck('nom', 'id')
+            ->options(fn (): array => collect(app(AcademicStructureCatalogContract::class)->niveaux())
+                ->pluck('name', 'id')
                 ->all())
             ->placeholder('Tous les niveaux')
             ->helperText('Laissez « Tous les niveaux » pour appliquer ce paramètre aux trois niveaux.')

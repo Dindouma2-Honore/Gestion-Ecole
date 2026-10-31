@@ -6,7 +6,15 @@ use Illuminate\Support\Collection;
 
 interface DisciplinePersonnelServiceContract
 {
-    public function enregistrerSanction(int $employeId, string $type, string $motif, ?int $dureeJours = null): object;
+    public function enregistrerSanction(
+        int $employeId,
+        string $type,
+        string $motif,
+        ?int $dureeJours = null,
+        ?\DateTimeInterface $dateSanction = null,
+        ?int $documentJustificatifId = null,
+        ?string $observations = null
+    ): object;
 
     public function valider(int $sanctionId, int $validateurId): void;
 

@@ -13,6 +13,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 interface DocumentServiceContract
 {
+    /** Métadonnées internes pour traitement documentaire en queue, jamais exposées au navigateur. */
+    public function sourceInterne(int $documentId): array;
+
     /** Attache un document à n'importe quel modèle métier. */
     public function attacher(
         Model $documentable,

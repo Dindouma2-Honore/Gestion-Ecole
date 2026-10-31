@@ -12,7 +12,7 @@ class Livre extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'titre', 'auteur', 'isbn', 'categorie', 'niveau_id',
+        'titre', 'auteur', 'isbn', 'categorie', 'niveau_id', 'description', 'couverture',
     ];
 
     public function exemplaires(): HasMany

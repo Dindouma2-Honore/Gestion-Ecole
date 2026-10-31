@@ -7,6 +7,7 @@ use App\Modules\RH\Contracts\DisciplinePersonnelServiceContract;
 use App\Modules\RH\Contracts\PointageServiceContract;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use Illuminate\Support\Collection;
 
 class AbsenceServiceAdapter implements AbsenceServiceContract
 {
@@ -38,5 +39,33 @@ class AbsenceServiceAdapter implements AbsenceServiceContract
         }
 
         return $count;
+    }
+
+    public function getAbsencesNonJustifiees(int $personnelId, Carbon $debut, Carbon $fin): Collection
+    {
+        return app(AbsenceService::class)->getAbsencesNonJustifiees($personnelId, $debut, $fin);
+    }
+
+    public function getJoursAbsenceNonJustifieePourPeriode(int $personnelId, Carbon $debut, Carbon $fin): int
+    {
+        return app(AbsenceService::class)->getJoursAbsenceNonJustifieePourPeriode($personnelId, $debut, $fin);
+    }
+
+    public function compterAbsencesValideesPourDate(Carbon $date): int
+    {
+        return app(AbsenceService::class)->compterAbsencesValideesPourDate($date);
+    }
+
+    public function enregistrerAbsence(
+        int $personnelId,
+        \DateTimeInterface $debut,
+        \DateTimeInterface $fin,
+        string $type,
+        string $motif,
+        ?int $documentId = null,
+        string $statut = 'en_attente',
+        ?int $createdBy = null
+    ): object {
+        return app(AbsenceService::class)->enregistrerAbsence($personnelId, $debut, $fin, $type, $motif, $documentId, $statut, $createdBy);
     }
 }

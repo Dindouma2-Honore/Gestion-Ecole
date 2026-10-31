@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Finances\Filament\Resources;
 
 use App\Filament\Support\AmbassadorsDesign;
+use App\Filament\Support\RecordModal;
 use App\Models\User;
 use App\Modules\Finances\Contracts\BudgetServiceContract;
 use App\Modules\Finances\Filament\Resources\BudgetResource\Pages;
@@ -70,7 +71,7 @@ class BudgetResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordModal::configure($table
             ->columns([
                 TextColumn::make('annee_scolaire_id')
                     ->label('Année scolaire')
@@ -102,7 +103,7 @@ class BudgetResource extends Resource
                     })
                     ->action(fn (Budget $record) => app(BudgetServiceContract::class)
                         ->validerBudget($record->id, (int) Auth::id())),
-            ]);
+            ]), static::class);
     }
 
     public static function canEdit(Model $record): bool

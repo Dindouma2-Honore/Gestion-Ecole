@@ -8,9 +8,9 @@ use App\Modules\Finances\Models\CatalogueFraisDivers;
 use App\Modules\Finances\Models\GrilleFrais;
 use App\Modules\Finances\Models\GroupeFrais;
 use App\Modules\Finances\Models\TypeFraisRecurrent;
+use App\Modules\Scolarite\Contracts\AcademicStructureCatalogContract;
 use App\Modules\Socle\Contracts\AnneeScolaireServiceContract;
 use App\Modules\Socle\Contracts\AuditServiceContract;
-use App\Modules\Socle\Contracts\ParametrageServiceContract;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -86,7 +86,7 @@ class CreateFrais extends Page implements HasForms
                 ->visible(fn (Get $get): bool => $get('nature') === 'recurrent' && $get('nature_recurrente') === 'scolarite'),
             Select::make('niveau_id')
                 ->label('Niveau concerné')
-                ->options(fn (): array => collect(app(ParametrageServiceContract::class)->getTousLesNiveaux())->pluck('nom', 'id')->all())
+                ->options(fn (): array => collect(app(AcademicStructureCatalogContract::class)->niveaux())->pluck('name', 'id')->all())
                 ->visible(fn (Get $get): bool => $get('nature') === 'recurrent')
                 ->helperText('Laissez vide pour appliquer le frais à tous les niveaux.'),
             Select::make('annee_scolaire_id')

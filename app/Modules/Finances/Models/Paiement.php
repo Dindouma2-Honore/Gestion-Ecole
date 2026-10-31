@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Finances\Models;
 
 use App\Models\User;
+use App\Modules\Socle\Contracts\AcademicContextContract;
+use App\Modules\Socle\Data\AcademicYearData;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -43,5 +45,10 @@ class Paiement extends Model
     public function fraisDivers(): BelongsTo
     {
         return $this->belongsTo(FraisDiversEleve::class, 'frais_divers_eleve_id');
+    }
+
+    public function getAnneeScolaireAttribute(): ?AcademicYearData
+    {
+        return app(AcademicContextContract::class)->academicYear((int) $this->annee_scolaire_id);
     }
 }

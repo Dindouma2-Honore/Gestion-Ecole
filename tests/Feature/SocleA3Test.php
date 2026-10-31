@@ -55,7 +55,7 @@ class SocleA3Test extends TestCase
         $service->archiverAnnee($annee->id);
     }
 
-    public function test_closed_year_is_editable_only_by_founder_and_archived_year_by_nobody(): void
+    public function test_closed_and_archived_years_are_readonly_for_everyone(): void
     {
         $fondateur = User::factory()->create();
         $fondateur->assignRole('Fondateur');
@@ -64,10 +64,10 @@ class SocleA3Test extends TestCase
         $annee = $this->annee('2026-2027', AnneeScolaire::STATUT_CLOTUREE);
         $service = app(AnneeScolaireServiceContract::class);
 
-        $this->assertTrue($service->ecritureAutorisee($annee->id, $fondateur));
+        $this->assertFalse($service->ecritureAutorisee($annee->id, $fondateur));
         $this->assertFalse($service->ecritureAutorisee($annee->id, $enseignant));
 
-        $annee->update(['statut' => AnneeScolaire::STATUT_ARCHIVEE]);
+        $service->archiverAnnee($annee->id);
         $this->assertFalse($service->ecritureAutorisee($annee->id, $fondateur));
         $this->assertFalse(Gate::forUser($fondateur)->allows('update', $annee->fresh()));
     }
@@ -202,8 +202,8 @@ class SocleA3Test extends TestCase
             'annee_scolaire_id' => $annee->id,
             'libelle' => $nom,
             'type' => 'trimestre',
-            'date_debut' => '2026-09-01',
-            'date_fin' => '2026-12-15',
+            'date_debut' => $ordre === 1 ? '2026-09-01' : '2026-12-16',
+            'date_fin' => $ordre === 1 ? '2026-12-15' : '2027-03-31',
             'ordre' => $ordre,
         ]);
     }

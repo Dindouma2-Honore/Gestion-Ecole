@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\RH\Filament\Resources\EmployeResource\Pages;
 
 use App\Filament\Concerns\HasCardListLayout;
+use App\Filament\Support\AmbassadorsDesign;
 use App\Modules\RH\Filament\Resources\CategoriePersonnelResource;
 use App\Modules\RH\Filament\Resources\EmployeResource;
+use App\Modules\RH\Filament\Resources\PalierAncienneteResource;
 use App\Modules\RH\Filament\Resources\PersonnelRoleResource;
 use App\Modules\RH\Filament\Resources\PosteAdministratifResource;
+use App\Modules\RH\Filament\Support\RhActions;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
@@ -24,8 +27,14 @@ class ListEmployes extends ListRecords
             $this->cardLayoutAction(),
             Actions\Action::make('roles')->label('Rôles')->icon('heroicon-o-shield-check')->color('gray')->url(PersonnelRoleResource::getUrl()),
             Actions\Action::make('fonctions')->label('Fonctions')->icon('heroicon-o-briefcase')->color('gray')->url(PosteAdministratifResource::getUrl()),
-            Actions\Action::make('categories')->label('Catégories')->icon('heroicon-o-tag')->color('gray')->url(CategoriePersonnelResource::getUrl()),
-            Actions\CreateAction::make()->label('Nouveau membre du personnel'),
+            Actions\Action::make('categories')->label('Catégories libres')->icon('heroicon-o-tag')->color('gray')->url(CategoriePersonnelResource::getUrl()),
+            Actions\Action::make('paliers')->label('Paliers d’ancienneté')->icon('heroicon-o-chart-bar')->color('gray')->url(PalierAncienneteResource::getUrl()),
+            RhActions::create()
+                ->label('Nouveau membre du personnel')
+                ->modal(true)
+                ->modalHeading('Nouveau membre du personnel')
+                ->modalWidth('none')->extraModalWindowAttributes(AmbassadorsDesign::goldenModalAttributes())
+                ->createAnother(false),
         ];
     }
 }

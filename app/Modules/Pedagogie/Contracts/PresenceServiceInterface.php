@@ -9,8 +9,8 @@ use Illuminate\Support\Collection;
 
 interface PresenceServiceInterface
 {
-    // Peut lever AppelDejaEffectueException (voir Exceptions/) si l'appel a déjà été fait.
-    public function faireAppel(int $seanceId, array $donneesEleves): void;
+    // Peut lever AppelDejaEffectueException (voir Exceptions/) si l'appel a déjà été fait et $remplacer est faux.
+    public function faireAppel(int $seanceId, array $donneesEleves, bool $remplacer = false): void;
 
     public function appelDejaFait(int $seanceId): bool;
 
@@ -32,4 +32,11 @@ interface PresenceServiceInterface
      * module Biométrie une fois branché (empreinte, badge...).
      */
     public function enregistrerPointage(int $eleveId, int $seanceId, string $statut): void;
+
+    /**
+     * Verrouille l'appel d'une séance (clôture par la vie scolaire ou la direction).
+     */
+    public function verrouillerAppel(int $seanceId): void;
+
+    public function estAppelVerrouille(int $seanceId): bool;
 }

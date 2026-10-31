@@ -2,6 +2,7 @@
 
 namespace App\Modules\Assiduite\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Modules\Assiduite\Filament\Resources\VisiteInfirmerieResource\Pages;
 use App\Modules\Assiduite\Models\VisiteInfirmerie;
 use Filament\Forms\Components\DateTimePicker;
@@ -18,6 +19,8 @@ use Illuminate\Support\Facades\Auth;
 
 class VisiteInfirmerieResource extends Resource
 {
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $model = VisiteInfirmerie::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-plus-circle';
@@ -64,7 +67,7 @@ class VisiteInfirmerieResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordModal::configure($table
             ->columns([
                 TextColumn::make('eleve.nom')->label('Élève')->sortable()->searchable(),
                 TextColumn::make('date_heure')->dateTime()->sortable(),
@@ -80,7 +83,7 @@ class VisiteInfirmerieResource extends Resource
                 IconColumn::make('evacuation_necessaire')->boolean()->label('Évacuation'),
                 IconColumn::make('parent_notifie')->boolean()->label('Notifié'),
                 TextColumn::make('traitePar.name')->label('Soignant'),
-            ]);
+            ]), static::class);
     }
 
     public static function getPages(): array

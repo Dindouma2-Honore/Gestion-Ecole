@@ -13,12 +13,14 @@ class SortieEleve extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'eleve_id', 'parent_id', 'personne_autorisee_nom', 'type',
-        'heure_sortie', 'justificatif_document_id', 'remis_par',
+        'eleve_id', 'parent_id', 'personne_autorisee_nom', 'type', 'motif',
+        'heure_prevue', 'heure_sortie', 'statut', 'justificatif_document_id',
+        'remis_par', 'autorise_par', 'autorise_le', 'cloturee_le', 'commentaire',
     ];
 
     protected $casts = [
-        'heure_sortie' => 'datetime',
+        'heure_prevue' => 'datetime', 'heure_sortie' => 'datetime',
+        'autorise_le' => 'datetime', 'cloturee_le' => 'datetime',
     ];
 
     // eleve_id, parent_id, remis_par : autres modules -> pas de relation

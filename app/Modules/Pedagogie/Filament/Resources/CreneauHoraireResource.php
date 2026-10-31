@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Pedagogie\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Modules\Pedagogie\Models\CreneauHoraire;
 use BackedEnum;
-use Filament\Forms\Components\Select;
-use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TimePicker;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -22,7 +23,7 @@ class CreneauHoraireResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clock';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Pédagogie';
+    protected static string|UnitEnum|null $navigationGroup = 'Établissement & paramètres';
 
     protected static ?string $navigationLabel = 'Créneaux horaires';
 
@@ -63,7 +64,7 @@ class CreneauHoraireResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordModal::configure($table
             ->columns([
                 Tables\Columns\TextColumn::make('jour_semaine')
                     ->label('Jour')
@@ -82,7 +83,7 @@ class CreneauHoraireResource extends Resource
             ->actions([
                 EditAction::make(),
                 DeleteAction::make(),
-            ]);
+            ]), static::class);
     }
 
     public static function getPages(): array

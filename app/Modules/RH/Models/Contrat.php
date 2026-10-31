@@ -2,12 +2,15 @@
 
 namespace App\Modules\RH\Models;
 
+use App\Modules\Socle\Traits\AuditsSensitiveChanges;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Contrat extends Model
 {
+    use AuditsSensitiveChanges;
+
     protected $table = 'contrats';
 
     protected $fillable = [
@@ -45,6 +48,11 @@ class Contrat extends Model
     public function avenants(): HasMany
     {
         return $this->hasMany(ContratAvenant::class, 'contrat_id');
+    }
+
+    public function fonctionsRemunerees(): HasMany
+    {
+        return $this->hasMany(ContratFonctionRemuneration::class, 'contrat_id');
     }
 
     public function bulletins(): HasMany

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Communication\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Modules\Communication\Filament\Resources\NotificationEnvoyeeResource\Pages;
 use App\Modules\Communication\Models\NotificationEnvoyee;
 use BackedEnum;
@@ -86,7 +87,7 @@ class NotificationEnvoyeeResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        return RecordModal::configure($table
             ->columns([
                 Tables\Columns\TextColumn::make('id')->sortable(),
                 Tables\Columns\TextColumn::make('canal')->badge()->searchable()->sortable(),
@@ -121,7 +122,7 @@ class NotificationEnvoyeeResource extends Resource
             ])
             ->actions([
                 ViewAction::make(),
-            ]);
+            ]), static::class);
     }
 
     public static function getPages(): array

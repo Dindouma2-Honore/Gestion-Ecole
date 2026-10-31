@@ -6,7 +6,9 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Modules\Finances\Contracts\CaisseServiceContract;
+use App\Modules\Finances\Contracts\ConfigurationFraisClasseServiceContract;
 use App\Modules\Finances\Contracts\FacturePreinscriptionServiceContract;
+use App\Modules\Finances\Contracts\FraisScolaireServiceContract;
 use App\Modules\Finances\Contracts\PaiementServiceContract;
 use App\Modules\Finances\Exceptions\ValidationVersementInterditeException;
 use App\Modules\Finances\Filament\Resources\FacturePreinscriptionResource\Pages\ListFacturesPreinscription;
@@ -16,21 +18,25 @@ use App\Modules\Finances\Models\CatalogueFraisDivers;
 use App\Modules\Finances\Models\ConfigurationFraisClasse;
 use App\Modules\Finances\Models\FacturePreinscription;
 use App\Modules\Finances\Models\GrilleFrais;
+use App\Modules\Finances\Models\Paiement;
 use App\Modules\Finances\Models\PaiementTrancheAllocation;
 use App\Modules\Finances\Models\TypeFraisRecurrent;
 use App\Modules\Scolarite\Contracts\InscriptionFacturationPort;
 use App\Modules\Scolarite\Contracts\InscriptionServiceInterface;
+use App\Modules\Scolarite\Exceptions\DoubleInscriptionException;
+use App\Modules\Scolarite\Filament\Resources\EleveResource;
+use App\Modules\Scolarite\Filament\Resources\EleveResource\Pages\ListEleves;
 use App\Modules\Scolarite\Filament\Resources\InscriptionResource;
 use App\Modules\Scolarite\Filament\Resources\InscriptionResource\Pages\CreateInscription;
 use App\Modules\Scolarite\Filament\Resources\InscriptionResource\Pages\ListInscriptions;
 use App\Modules\Scolarite\Models\Classe;
 use App\Modules\Scolarite\Models\Eleve;
 use App\Modules\Scolarite\Models\Inscription;
+use App\Modules\Scolarite\Models\Niveau;
 use App\Modules\Scolarite\Models\ParentTuteur;
 use App\Modules\Scolarite\Support\ElevePhoto;
 use App\Modules\Socle\Models\AnneeScolaire;
 use App\Modules\Socle\Models\FormatNumerotation;
-use App\Modules\Socle\Models\Niveau;
 use Database\Seeders\DocumentNumberingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -127,6 +133,29 @@ class PreinscriptionWorkflowTest extends TestCase
         $this->assertNotNull($facture->fresh()->envoyee_le);
     }
 
+    public function test_preinscription_accepts_a_linked_parent_without_email(): void
+    {
+        $eleve = Eleve::create(['nom' => 'Essomba', 'prenom' => 'Junior', 'statut' => 'candidat']);
+        $parent = ParentTuteur::create(['nom' => 'Essomba', 'prenom' => 'Marie', 'telephone' => '677000000']);
+        $eleve->parentsTuteurs()->attach($parent->id, ['responsable_paiement' => true, 'lien' => 'mere']);
+
+        $inscriptionId = app(InscriptionServiceInterface::class)->demarrerPreinscription(
+            $eleve->id,
+            $this->classe->id,
+            $this->annee->id,
+            $parent->id,
+            [],
+            15000,
+        );
+
+        $this->assertDatabaseHas('factures_preinscription', [
+            'inscription_id' => $inscriptionId,
+            'parent_id' => $parent->id,
+            'parent_email' => null,
+        ]);
+        $this->assertNotNull(FacturePreinscription::where('inscription_id', $inscriptionId)->value('document_provisoire_id'));
+    }
+
     public function test_only_selected_miscellaneous_fees_are_proposed_and_added(): void
     {
         $fraisDivers = CatalogueFraisDivers::create([
@@ -157,7 +186,7 @@ class PreinscriptionWorkflowTest extends TestCase
             'type_frais' => 'divers-'.$fraisDivers->id,
             'libelle' => 'Transport scolaire optionnel',
             'montant' => 7000,
-            'obligatoire' => false,
+            'obligatoire' => true,
         ]);
         $this->assertDatabaseHas('frais_divers_eleves', [
             'catalogue_frais_divers_id' => $fraisDivers->id,
@@ -197,7 +226,7 @@ class PreinscriptionWorkflowTest extends TestCase
 
     public function test_photo_field_keeps_camera_and_existing_file_choices_available(): void
     {
-        $resource = file_get_contents(app_path('Modules/Scolarite/Filament/Resources/InscriptionResource.php'));
+        $resource = file_get_contents(app_path('Modules/Scolarite/Filament/Resources/EleveResource.php'));
 
         $this->assertIsString($resource);
         $this->assertStringContainsString('Prendre une photo ou choisir un fichier', $resource);
@@ -205,11 +234,12 @@ class PreinscriptionWorkflowTest extends TestCase
         $this->assertStringNotContainsString('->capture(', $resource);
     }
 
-    public function test_guided_registration_creates_student_parent_link_and_pending_invoice(): void
+    public function test_guided_registration_links_an_existing_student_to_parent_and_pending_invoice(): void
     {
+        $eleveAdmis = Eleve::create(['nom' => 'Mballa', 'prenom' => 'Grace', 'date_naissance' => '2018-04-12', 'sexe' => 'F', 'photo' => 'eleves/photos/grace.png', 'statut' => 'prospect']);
         $id = app(InscriptionServiceInterface::class)->preparerEtDemarrerPreinscription(
-            null,
-            ['nom' => 'Mballa', 'prenom' => 'Grace', 'date_naissance' => '2018-04-12', 'sexe' => 'F', 'photo' => 'eleves/photos/grace.png'],
+            $eleveAdmis->id,
+            [],
             null,
             ['nom' => 'Mballa', 'prenom' => 'Alice', 'telephone' => '690000000', 'email' => 'alice@example.test'],
             'mere',
@@ -233,20 +263,17 @@ class PreinscriptionWorkflowTest extends TestCase
         $this->actingAs($personnel);
 
         Livewire::test(CreateInscription::class)
+            ->assertSet('data.montant_verse', 15000)
             ->fillForm([
-                'eleve_existant' => true,
                 'eleve_id' => $this->eleve->id,
-            ])
-            ->goToNextWizardStep()
-            ->fillForm([
-                'parent_existant' => true,
-                'parent_id' => $this->parent->id,
-                'lien_parente' => 'pere',
             ])
             ->goToNextWizardStep()
             ->fillForm([
                 'annee_scolaire_id' => $this->annee->id,
                 'classe_id' => $this->classe->id,
+            ])
+            ->goToNextWizardStep()
+            ->fillForm([
                 'frais_optionnels' => ['transport'],
                 'montant_verse' => 30000,
             ])
@@ -295,24 +322,22 @@ class PreinscriptionWorkflowTest extends TestCase
 
         Livewire::test(CreateInscription::class)
             ->fillForm([
-                'eleve_existant' => true,
                 'eleve_id' => $this->eleve->id,
             ])
-            ->assertSet('data.parent_existant', true)
             ->assertSet('data.parent_id', $this->parent->id)
             ->fillForm([
                 'lien_parente' => 'pere',
                 'annee_scolaire_id' => $this->annee->id,
                 'classe_id' => $this->classe->id,
                 'frais_optionnels' => ['divers-'.$fraisDivers->id],
-                'montant_verse' => 15000,
+                'montant_verse' => 22000,
             ])
             ->call('create')
             ->assertHasNoFormErrors();
 
         $facture = FacturePreinscription::with('lignes')->firstOrFail();
         $this->assertSame(22000.0, (float) $facture->montant_total);
-        $this->assertSame(15000.0, (float) $facture->montant_versement_prevu);
+        $this->assertSame(22000.0, (float) $facture->montant_versement_prevu);
         $this->assertEqualsCanonicalizing(
             ['inscription', 'divers-'.$fraisDivers->id],
             $facture->lignes->pluck('type_frais')->all(),
@@ -322,6 +347,66 @@ class PreinscriptionWorkflowTest extends TestCase
             'classe_id' => $this->classe->id,
             'statut' => 'en_attente_versement',
         ]);
+    }
+
+    public function test_duplicate_registration_is_rejected_by_field_validation(): void
+    {
+        Role::firstOrCreate(['name' => 'Fondateur']);
+        $personnel = User::factory()->create(['statut' => 'actif']);
+        $personnel->assignRole('Fondateur');
+        $this->actingAs($personnel);
+        Inscription::create([
+            'eleve_id' => $this->eleve->id,
+            'classe_id' => $this->classe->id,
+            'annee_scolaire_id' => $this->annee->id,
+            'type' => 'inscription',
+            'date_inscription' => today(),
+            'statut' => 'active',
+        ]);
+        $this->assertTrue(EleveResource::estInscritAnneeActive($this->eleve));
+
+        Livewire::test(CreateInscription::class)
+            ->fillForm([
+                'eleve_id' => $this->eleve->id,
+                'parent_id' => $this->parent->id,
+                'lien_parente' => 'tuteur',
+                'annee_scolaire_id' => $this->annee->id,
+                'classe_id' => $this->classe->id,
+                'frais_optionnels' => [],
+                'montant_verse' => 15000,
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['eleve_id'])
+            ->assertNotDispatched('show-global-error');
+
+        $this->assertSame(1, Inscription::query()->where('eleve_id', $this->eleve->id)->count());
+        $this->assertDatabaseMissing('factures_preinscription', ['eleve_id' => $this->eleve->id]);
+    }
+
+    public function test_business_error_after_validation_is_displayed_in_the_global_error_card(): void
+    {
+        Role::firstOrCreate(['name' => 'Fondateur']);
+        $personnel = User::factory()->create(['statut' => 'actif']);
+        $personnel->assignRole('Fondateur');
+        $this->actingAs($personnel);
+        // A concurrent registration can invalidate the request after field validation.
+        $service = \Mockery::mock(InscriptionServiceInterface::class);
+        $service->shouldReceive('estInscrit')->andReturn(false);
+        $exception = new DoubleInscriptionException($this->eleve->id, $this->annee->id);
+        $service->shouldReceive('preparerEtDemarrerPreinscription')->once()->andThrow($exception);
+        $this->app->instance(InscriptionServiceInterface::class, $service);
+
+        Livewire::test(CreateInscription::class)
+            ->fillForm([
+                'eleve_id' => $this->eleve->id, 'parent_id' => $this->parent->id,
+                'lien_parente' => 'tuteur', 'annee_scolaire_id' => $this->annee->id,
+                'classe_id' => $this->classe->id, 'frais_optionnels' => [], 'montant_verse' => 15000,
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors()
+            ->assertDispatched('show-global-error', title: 'Inscription déjà existante', message: $exception->getMessage());
+        $this->assertDatabaseMissing('inscriptions', ['eleve_id' => $this->eleve->id]);
+        $this->assertDatabaseMissing('factures_preinscription', ['eleve_id' => $this->eleve->id]);
     }
 
     public function test_existing_student_with_history_starts_a_reenrollment(): void
@@ -416,9 +501,105 @@ class PreinscriptionWorkflowTest extends TestCase
         ]);
         $this->assertSame(15000.0, (float) PaiementTrancheAllocation::query()->sum('montant'));
         $this->assertDatabaseHas('inscriptions', ['id' => $inscriptionId, 'statut' => 'validee']);
+
+        $paiement = Paiement::query()
+            ->where('inscription_id', $inscriptionId)
+            ->where('rubrique', 'inscription')
+            ->firstOrFail();
+        $recu = app(PaiementServiceContract::class)->getRecuPdf($paiement->id);
+        $this->assertStringContainsString('%PDF', $recu['contenu']);
+        $this->assertStringNotContainsString('/', $recu['nom']);
+        $this->assertStringNotContainsString('\\', $recu['nom']);
     }
 
-    public function test_missing_registration_fee_is_reported_by_the_billing_port(): void
+    public function test_tuition_exemption_is_applied_to_invoice_and_all_five_slices_only(): void
+    {
+        $configuration = ConfigurationFraisClasse::create([
+            'classe_id' => $this->classe->id,
+            'annee_scolaire_id' => $this->annee->id,
+            'frais_inscription' => 15000,
+            'montant_total' => 125000,
+            'politique_validation_inscription' => 'frais_inscription',
+            'montant_minimum_inscription' => 15000,
+            'actif' => true,
+        ]);
+        $configuration->tranches()->createMany(collect(range(1, 5))->map(fn (int $ordre): array => [
+            'ordre' => $ordre,
+            'libelle' => "Tranche {$ordre}",
+            'montant' => 25000,
+            'date_echeance' => "2027-0{$ordre}-01",
+            'actif' => true,
+        ])->all());
+
+        app(FraisScolaireServiceContract::class)->accorderRemise(
+            $this->eleve->id,
+            'scolarite',
+            'exoneration_totale',
+            0,
+            'Bourse complète',
+        );
+
+        app(InscriptionServiceInterface::class)->demarrerPreinscription(
+            $this->eleve->id,
+            $this->classe->id,
+            $this->annee->id,
+            $this->parent->id,
+            [],
+            15000,
+        );
+
+        $facture = FacturePreinscription::query()->with('lignes')->firstOrFail();
+        $this->assertSame(15000.0, (float) $facture->montant_total);
+        $this->assertSame(15000.0, (float) $facture->lignes->firstWhere('type_frais', 'inscription')->montant);
+        $this->assertSame(0.0, (float) $facture->lignes->firstWhere('type_frais', 'scolarite')->montant);
+
+        $situation = app(ConfigurationFraisClasseServiceContract::class)->situation(
+            $this->eleve->id,
+            $this->classe->id,
+            $this->annee->id,
+        );
+        $this->assertSame(0.0, (float) $situation['montant_total']);
+        $this->assertSame(0.0, (float) $situation['reste_a_payer']);
+        $this->assertSame([0.0, 0.0, 0.0, 0.0, 0.0], array_map(
+            static fn (array $tranche): float => (float) $tranche['montant'],
+            $situation['tranches'],
+        ));
+    }
+
+    public function test_class_choice_allows_repeating_or_moving_up_but_never_moving_down(): void
+    {
+        $niveauInferieur = Niveau::create(['nom' => 'CE2', 'code' => 'CE2-CHOIX', 'ordre' => 4]);
+        $niveauSuperieur = Niveau::create(['nom' => 'CM2', 'code' => 'CM2-CHOIX', 'ordre' => 6]);
+        $classeInferieure = Classe::create([
+            'nom' => 'CE2 B', 'niveau_id' => $niveauInferieur->id,
+            'annee_scolaire_id' => $this->annee->id, 'capacite_max' => 30, 'statut' => 'active',
+        ]);
+        $classeSuperieure = Classe::create([
+            'nom' => 'CM2 A', 'niveau_id' => $niveauSuperieur->id,
+            'annee_scolaire_id' => $this->annee->id, 'capacite_max' => 30, 'statut' => 'active',
+        ]);
+        $ancienneAnnee = AnneeScolaire::create([
+            'libelle' => '2026-2027', 'date_debut' => '2026-09-01',
+            'date_fin' => '2027-07-31', 'statut' => 'brouillon',
+        ]);
+        $ancienneClasse = Classe::create([
+            'nom' => 'CM1 Historique', 'niveau_id' => $this->classe->niveau_id,
+            'annee_scolaire_id' => $ancienneAnnee->id, 'capacite_max' => 30, 'statut' => 'archivee',
+        ]);
+        Inscription::create([
+            'eleve_id' => $this->eleve->id, 'classe_id' => $ancienneClasse->id,
+            'annee_scolaire_id' => $ancienneAnnee->id, 'type' => 'inscription',
+            'date_inscription' => '2026-09-01', 'statut' => 'validee',
+        ]);
+
+        $options = InscriptionResource::classesAutoriseesPourEleve($this->eleve->id, $this->annee->id);
+
+        $this->assertArrayHasKey($this->classe->id, $options);
+        $this->assertArrayHasKey($classeSuperieure->id, $options);
+        $this->assertArrayNotHasKey($classeInferieure->id, $options);
+    }
+
+    public function test_missing_registration_fee_is_automatically_restored_by_the_billing_port(): void
     {
         $type = TypeFraisRecurrent::query()->where('nom', 'Inscription')->firstOrFail();
         GrilleFrais::query()->where('type_frais_recurrent_id', $type->id)->delete();
@@ -430,10 +611,14 @@ class PreinscriptionWorkflowTest extends TestCase
                 $this->annee->id,
             );
 
-        $this->assertSame(
-            "Les frais obligatoires d'inscription ne sont pas configurés pour ce niveau et cette année.",
-            $erreur,
-        );
+        $this->assertNull($erreur);
+        $this->assertDatabaseHas('types_frais_recurrents', [
+            'nature' => 'inscription',
+            'niveau_id' => $this->classe->niveau_id,
+            'annee_scolaire_id' => $this->annee->id,
+            'montant' => 15000,
+            'actif' => true,
+        ]);
     }
 
     public function test_student_photo_accepts_jpeg_and_png_within_five_megabytes(): void
@@ -467,7 +652,10 @@ class PreinscriptionWorkflowTest extends TestCase
         $this->actingAs(User::factory()->create(['statut' => 'actif']));
 
         $component = Livewire::test(ListInscriptions::class)
-            ->assertSet('affichage', 'cartes');
+            ->assertSet('affichage', 'tableau');
+
+        $this->assertNull($component->instance()->getTable()->getContentGrid());
+        $component->call('toggleLayout')->assertSet('affichage', 'cartes');
 
         $this->assertSame([
             'default' => 1,
@@ -475,8 +663,27 @@ class PreinscriptionWorkflowTest extends TestCase
             'md' => 2,
             'lg' => 3,
         ], $component->instance()->getTable()->getContentGrid());
-        $component->call('toggleLayout')->assertSet('affichage', 'tableau');
 
+        $component->call('toggleLayout')->assertSet('affichage', 'tableau');
+        $this->assertNull($component->instance()->getTable()->getContentGrid());
+    }
+
+    public function test_student_list_table_action_really_toggles_the_layout(): void
+    {
+        $this->actingAs(User::factory()->create(['statut' => 'actif']));
+
+        $component = Livewire::test(ListEleves::class)
+            ->assertSet('affichage', 'tableau');
+
+        $this->assertNull($component->instance()->getTable()->getContentGrid());
+
+        $component
+            ->callAction('toggleLayout')
+            ->assertSet('affichage', 'cartes');
+
+        $this->assertNotNull($component->instance()->getTable()->getContentGrid());
+
+        $component->callAction('toggleLayout')->assertSet('affichage', 'tableau');
         $this->assertNull($component->instance()->getTable()->getContentGrid());
     }
 

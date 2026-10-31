@@ -70,6 +70,16 @@ class RepartitionPaiementService implements RepartitionPaiementServiceContract
                 if ($montantVerse > $resteDu + 0.001) {
                     throw new VersementSuperieurAuDuException($montantVerse, $resteDu);
                 }
+
+                $minimumRequis = round($resteInscription + $resteDivers, 2);
+                if ($minimumRequis > 0 && $montantVerse < $minimumRequis) {
+                    $montantFormate = number_format($minimumRequis, 0, ',', ' ');
+                    if ($resteDivers > 0) {
+                        throw new \DomainException("Transaction impossible. Le montant minimum à payer est de {$montantFormate} FCFA, comprenant l'inscription et les frais divers sélectionnés.");
+                    }
+                    throw new \DomainException("Transaction impossible. Le montant minimum à payer est de {$montantFormate} FCFA, correspondant aux frais d'inscription.");
+                }
+
                 $reference = (string) Str::uuid();
                 $restant = $montantVerse;
                 $lignes = [];
@@ -117,6 +127,12 @@ class RepartitionPaiementService implements RepartitionPaiementServiceContract
 
             if ($montantVerse > $resteDu + 0.001) {
                 throw new VersementSuperieurAuDuException($montantVerse, $resteDu);
+            }
+
+            $resteInscription = (float) ($situation['inscription']['reste'] ?? 0);
+            if ($resteInscription > 0 && $montantVerse < $resteInscription) {
+                $montantFormate = number_format($resteInscription, 0, ',', ' ');
+                throw new \DomainException("Transaction impossible. Le montant minimum à payer est de {$montantFormate} FCFA, correspondant aux frais d'inscription.");
             }
 
             $reference = (string) Str::uuid();

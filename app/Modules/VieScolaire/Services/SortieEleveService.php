@@ -68,10 +68,10 @@ class SortieEleveService implements SortieEleveServiceInterface
     }
 
     public function getHistoriqueSorties(int $eleveId): Collection
-{
-    return SortieEleve::where('eleve_id', $eleveId)
-        ->orderByDesc('heure_sortie')
-        ->orderByDesc('id')   // <-- départage à égalité de seconde
-        ->get();
-}
+    {
+        return SortieEleve::where('eleve_id', $eleveId)
+            ->orderByDesc('heure_sortie')
+            ->orderByDesc('id')   // <-- départage à égalité de seconde
+            ->get();
+    }
 }

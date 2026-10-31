@@ -10,8 +10,8 @@ use App\Modules\Pedagogie\Models\OffrePedagogique;
 use App\Modules\Pedagogie\Services\BulletinService;
 use App\Modules\Scolarite\Contracts\ClasseServiceInterface;
 use App\Modules\Scolarite\Models\Classe;
+use App\Modules\Scolarite\Models\Niveau;
 use App\Modules\Socle\Models\AnneeScolaire;
-use App\Modules\Socle\Models\Niveau;
 
 it('pondère les évaluations et utilise le coefficient annuel de la matière', function (): void {
     $niveau = Niveau::create(['nom' => 'Terminale', 'code' => 'TLE', 'ordre' => 12]);

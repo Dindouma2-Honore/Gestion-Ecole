@@ -41,7 +41,7 @@ class ClasseService implements ClasseServiceInterface
     public function getEffectif(int $classeId): int
     {
         return Inscription::where('classe_id', $classeId)
-            ->whereIn('statut', ['en_attente_versement', 'active', 'validee'])
+            ->whereIn('statut', ['en_attente_versement', 'active', 'validee', 'en_attente_annulation'])
             ->count();
     }
 
@@ -59,6 +59,16 @@ class ClasseService implements ClasseServiceInterface
     public function getToutesLesClasses(int $anneeScolaireId): array
     {
         return Classe::where('annee_scolaire_id', $anneeScolaireId)
+            ->orderBy('nom')
+            ->get()
+            ->map(fn (Classe $c) => ['id' => $c->id, 'nom' => $c->nom])
+            ->all();
+    }
+
+    public function getClassesParNiveau(int $niveauId, int $anneeScolaireId): array
+    {
+        return Classe::where('niveau_id', $niveauId)
+            ->where('annee_scolaire_id', $anneeScolaireId)
             ->orderBy('nom')
             ->get()
             ->map(fn (Classe $c) => ['id' => $c->id, 'nom' => $c->nom])

@@ -2,6 +2,8 @@
 
 namespace App\Modules\RH\Filament\Resources;
 
+use App\Filament\Support\AmbassadorsDesign;
+use App\Modules\RH\Filament\Support\RhActions;
 use App\Modules\RH\Models\Inspection;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -46,7 +48,9 @@ class InspectionResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        AmbassadorsDesign::configureTable($table, null);
+
+        return $table->recordActions([RhActions::edit()])
             ->columns([
                 TextColumn::make('enseignant.employe.nom_complet')->label('Enseignant')->sortable(),
                 TextColumn::make('date_inspection')->date()->sortable(),

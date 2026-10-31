@@ -3,7 +3,7 @@
 namespace App\Modules\RH\Filament\Resources\PointageResource\Pages;
 
 use App\Modules\RH\Filament\Resources\PointageResource;
-use Filament\Actions;
+use App\Modules\RH\Filament\Support\RhActions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListPointages extends ListRecords
@@ -13,7 +13,7 @@ class ListPointages extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            RhActions::create(),
         ];
     }
 }

@@ -16,9 +16,9 @@ use App\Modules\Finances\Models\MouvementCaisse;
 use App\Modules\Finances\Models\Paiement;
 use App\Modules\Finances\Models\SessionCaisse;
 use App\Modules\Scolarite\Contracts\EleveServiceInterface;
+use App\Modules\Scolarite\Models\Niveau;
 use App\Modules\Socle\Models\AnneeScolaire;
 use App\Modules\Socle\Models\FormatNumerotation;
-use App\Modules\Socle\Models\Niveau;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -127,7 +127,7 @@ class FinancesE41Test extends TestCase
         $this->assertSame('ouverte', $session->statut);
     }
 
-    public function test_automatic_opening_uses_previous_theoretical_balance_when_not_closed(): void
+    public function test_unclosed_previous_session_is_kept_until_reconciled(): void
     {
         $user = User::factory()->create(['statut' => 'actif']);
         $this->actingAs($user);
@@ -140,7 +140,10 @@ class FinancesE41Test extends TestCase
 
         $session = $this->caisse->garantirSessionOuverte();
 
-        $this->assertSame(27000.0, (float) $session->solde_ouverture);
+        $this->assertSame($ancienne->id, $session->id);
+        $this->assertSame(20000.0, (float) $session->solde_ouverture);
+        $this->assertSame(27000.0, $this->caisse->getSoldeTheoriqueActuel());
+        $this->assertSame(1, SessionCaisse::count());
     }
 
     public function test_solde_theorique_reflects_opening_balance_and_movements(): void
@@ -210,13 +213,14 @@ class FinancesE41Test extends TestCase
         $mouvement->delete();
     }
 
-    public function test_filament_automatically_opens_and_can_close_the_session(): void
+    public function test_filament_explicitly_opens_and_can_close_the_session(): void
     {
         $user = User::factory()->create(['statut' => 'actif']);
         $user->assignRole('Fondateur');
         $this->actingAs($user);
 
-        Livewire::test(ListMouvementsCaisse::class)->assertActionVisible('cloturer');
+        Livewire::test(ListMouvementsCaisse::class)->assertActionVisible('ouvrir')
+            ->callAction('ouvrir', ['solde_ouverture' => 0])->assertHasNoActionErrors();
 
         $this->assertDatabaseHas('sessions_caisse', ['statut' => 'ouverte', 'solde_ouverture' => 0]);
 

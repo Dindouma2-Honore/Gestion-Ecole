@@ -2,12 +2,15 @@
 
 namespace App\Modules\RH\Models;
 
+use App\Modules\Socle\Traits\AuditsSensitiveChanges;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BulletinPaie extends Model
 {
+    use AuditsSensitiveChanges;
+
     protected $table = 'bulletins_paie';
 
     protected $fillable = [
@@ -15,6 +18,8 @@ class BulletinPaie extends Model
         'contrat_id',
         'mois',
         'annee',
+        'periode_debut',
+        'periode_fin',
         'annee_scolaire_id',
         'salaire_base',
         'total_primes',
@@ -39,6 +44,8 @@ class BulletinPaie extends Model
             'avances_deduites' => 'decimal:2',
             'net_a_payer' => 'decimal:2',
             'date_paiement' => 'date',
+            'periode_debut' => 'date',
+            'periode_fin' => 'date',
         ];
     }
 

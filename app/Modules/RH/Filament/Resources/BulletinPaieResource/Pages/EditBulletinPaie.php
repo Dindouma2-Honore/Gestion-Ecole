@@ -11,6 +11,24 @@ class EditBulletinPaie extends EditRecord
 {
     protected static string $resource = BulletinPaieResource::class;
 
+    public function mount(int|string $record): void
+    {
+        parent::mount($record);
+
+        if (in_array($this->record->statut, ['valide', 'paye', 'annule'], true)) {
+            abort(403, 'Un bulletin validé ou payé ne peut plus être modifié.');
+        }
+    }
+
+    protected function authorizeAccess(): void
+    {
+        parent::authorizeAccess();
+
+        if (in_array($this->getRecord()->statut, ['valide', 'paye', 'annule'], true)) {
+            abort(403, 'Un bulletin validé ou payé ne peut plus être modifié.');
+        }
+    }
+
     protected function getHeaderActions(): array
     {
         return [

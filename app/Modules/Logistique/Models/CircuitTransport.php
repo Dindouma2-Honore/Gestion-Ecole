@@ -15,7 +15,7 @@ class CircuitTransport extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'nom', 'vehicule_id', 'chauffeur_id', 'accompagnateur_id',
+        'code', 'nom', 'vehicule_id', 'chauffeur_id', 'accompagnateur_id', 'statut',
     ];
 
     public function vehicule(): BelongsTo

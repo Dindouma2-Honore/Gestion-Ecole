@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Modules\Socle\Services;
 
-use App\Modules\Socle\Contracts\ParametrageServiceContract;
+use App\Modules\Scolarite\Contracts\AcademicStructureCatalogContract;
+use App\Modules\Scolarite\Contracts\AcademicStructureReadContract;
+use App\Modules\Scolarite\Data\AcademicStructureItemDTO;
 use App\Modules\Socle\Contracts\NumerotationServiceContract;
+use App\Modules\Socle\Contracts\ParametrageServiceContract;
 use App\Modules\Socle\Exceptions\TemplateNotificationInexistantException;
 use App\Modules\Socle\Models\ConfigEtablissement;
 use App\Modules\Socle\Models\JourFerie;
-use App\Modules\Socle\Models\Niveau;
 use App\Modules\Socle\Models\SeuilValidation;
 use App\Modules\Socle\Models\TemplateNotification;
 use App\Modules\Socle\Settings\SystemSettings;
@@ -29,12 +31,12 @@ class ParametrageService implements ParametrageServiceContract
 
     public function getTousLesNiveaux(): array
     {
-        return Niveau::orderBy('ordre')->get()->toArray();
+        return app(AcademicStructureCatalogContract::class)->niveaux();
     }
 
-    public function getNiveau(int $id): ?object
+    public function getNiveau(int $id): ?AcademicStructureItemDTO
     {
-        return Niveau::find($id);
+        return app(AcademicStructureReadContract::class)->niveau($id);
     }
 
     public function getParametre(string $cle, mixed $defaut = null): mixed

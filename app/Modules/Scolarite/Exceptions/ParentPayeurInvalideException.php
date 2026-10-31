@@ -10,6 +10,6 @@ class ParentPayeurInvalideException extends RuntimeException
 {
     public function __construct()
     {
-        parent::__construct("Le parent payeur doit être lié à l'élève et posséder une adresse e-mail valide.");
+        parent::__construct("Aucun parent payeur n'est lié à cet élève. Complétez d'abord son dossier d'admission.");
     }
 }

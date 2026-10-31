@@ -135,6 +135,6 @@ class CommunicationParentService implements CommunicationParentServiceContract
             'getKey' => fn () => $parentData->id,
         ] : null;
 
-        $this->notification->envoyer('whatsapp', $typeEvenement, null, $donnees);
+        $this->notification->envoyer('whatsapp', $typeEvenement, $parentObj, $donnees);
     }
 }

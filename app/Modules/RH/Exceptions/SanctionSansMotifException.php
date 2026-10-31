@@ -8,6 +8,6 @@ class SanctionSansMotifException extends Exception
 {
     public function __construct()
     {
-        parent::__construct("Un motif est obligatoire pour enregistrer une sanction disciplinaire.");
+        parent::__construct('Un motif est obligatoire pour enregistrer une sanction disciplinaire.');
     }
 }

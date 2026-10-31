@@ -2,7 +2,7 @@
     $record = $getRecord();
     $enfants = (int) ($record->eleves_count ?? 0);
 @endphp
-<a href="{{ \App\Modules\Scolarite\Filament\Resources\ParentTuteurResource::getUrl('edit', ['record' => $record]) }}" class="block">
+<a href="{{ \App\Modules\Scolarite\Filament\Resources\ParentTuteurResource::getUrl('view', ['record' => $record]) }}" class="block">
     <x-ambassadors-card
         icon="heroicon-o-users"
         :label="$record->profession ?: 'Parent / tuteur'"

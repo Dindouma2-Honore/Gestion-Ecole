@@ -44,6 +44,11 @@ class CreateEvaluation extends CreateRecord
             dateEvaluation: $data['date_evaluation'],
             bareme: (float) $data['bareme'],
             sujet: $sujet instanceof UploadedFile ? $sujet : null,
+            anneeScolaireId: isset($data['annee_scolaire_id']) ? (int) $data['annee_scolaire_id'] : null,
+            periodeId: isset($data['periode_id']) ? (int) $data['periode_id'] : null,
+            typeEvaluation: (string) ($data['type_evaluation'] ?? 'devoir'),
+            coefficient: isset($data['coefficient_evaluation']) ? (float) $data['coefficient_evaluation'] : 1.0,
+            modeEvaluation: (string) ($data['mode_evaluation'] ?? 'note'),
         );
     }
 }

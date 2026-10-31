@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Modules\Scolarite\Filament\Resources;
 
+use App\Filament\Support\AmbassadorsDesign;
 use App\Modules\Scolarite\Contracts\PaiementServiceContract;
 use App\Modules\Scolarite\Exceptions\MontantVersementExcedentaireException;
 use App\Modules\Scolarite\Filament\Resources\PaiementResource\Pages;
+use App\Modules\Scolarite\Filament\Support\ScolariteActions;
 use App\Modules\Scolarite\Models\Inscription;
 use App\Modules\Scolarite\Models\Paiement;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -40,7 +43,9 @@ class PaiementResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Scolarité';
 
-    protected static ?string $navigationLabel = 'Versements';
+    protected static ?string $navigationLabel = 'Paiements';
+
+    protected static ?int $navigationSort = 9;
 
     protected static ?string $modelLabel = 'versement';
 
@@ -63,7 +68,7 @@ class PaiementResource extends Resource
      */
     public static function creerVersementAction(): Action
     {
-        return Action::make('creerVersement')
+        return AmbassadorsDesign::goldenFormModal(Action::make('creerVersement'))
             ->label('Créer')
             ->icon('heroicon-o-plus')
             ->color('primary')
@@ -72,7 +77,7 @@ class PaiementResource extends Resource
                     ->label('Élève')
                     ->placeholder('Rechercher ou sélectionner un élève...')
                     ->options(fn () => Inscription::query()
-                        ->where('statut', 'en_attente_versement')
+                        ->whereIn('statut', ['en_attente_versement', 'active', 'validee'])
                         ->with(['eleve', 'classe'])
                         ->get()
                         ->mapWithKeys(fn (Inscription $i) => [
@@ -80,7 +85,7 @@ class PaiementResource extends Resource
                         ]))
                     ->searchable()
                     ->getSearchResultsUsing(fn (string $search) => Inscription::query()
-                        ->where('statut', 'en_attente_versement')
+                        ->whereIn('statut', ['en_attente_versement', 'active', 'validee'])
                         ->with(['eleve', 'classe'])
                         ->whereHas('eleve', fn ($q) => $q->where('nom', 'like', "%{$search}%")->orWhere('prenom', 'like', "%{$search}%"))
                         ->get()
@@ -92,11 +97,18 @@ class PaiementResource extends Resource
 
                 Placeholder::make('montant_a_payer')
                     ->label('Montant à payer')
-                    ->content(fn ($get) => filled($get('inscription_id'))
-                        ? number_format(
-                            app(PaiementServiceContract::class)->getResteAPayer((int) $get('inscription_id')), 0, ',', ' '
-                        ).' XAF'
-                        : '—')
+                    ->content(function ($get): string {
+                        if (! filled($get('inscription_id'))) {
+                            return '—';
+                        }
+                        try {
+                            $reste = app(PaiementServiceContract::class)->getResteAPayer((int) $get('inscription_id'));
+
+                            return number_format($reste, 0, ',', ' ').' XAF';
+                        } catch (\Throwable) {
+                            return 'Montant indisponible';
+                        }
+                    })
                     ->visible(fn ($get) => filled($get('inscription_id'))),
 
                 TextInput::make('montant')
@@ -149,25 +161,32 @@ class PaiementResource extends Resource
                         mode: $data['mode'],
                         referenceMobileMoney: $data['reference_mobile_money'] ?? null,
                     );
+
+                    Notification::make()
+                        ->title('Versement enregistré')
+                        ->success()
+                        ->send();
                 } catch (MontantVersementExcedentaireException $e) {
                     Notification::make()
                         ->title('Montant refusé')
                         ->body($e->getMessage())
                         ->danger()
                         ->send();
-
-                    return;
+                } catch (\Throwable $e) {
+                    report($e);
+                    Notification::make()
+                        ->title('Erreur lors de l’enregistrement')
+                        ->body($e->getMessage())
+                        ->danger()
+                        ->send();
                 }
-
-                Notification::make()
-                    ->title('Versement enregistré')
-                    ->success()
-                    ->send();
             });
     }
 
     public static function table(Table $table): Table
     {
+        ScolariteActions::configureTable($table, 'view');
+
         return $table
             ->query(Paiement::query()->with(['inscription.eleve']))
             ->columns([
@@ -210,16 +229,29 @@ class PaiementResource extends Resource
                 ]),
             ])
             ->actions([
-                Action::make('annuler')
-                    ->label('Annuler')
-                    ->icon('heroicon-o-x-circle')
-                    ->color('danger')
-                    ->visible(fn (Paiement $record) => $record->statut === 'valide')
-                    ->requiresConfirmation()
-                    ->form([
-                        Textarea::make('motif')->label('Motif d’annulation')->required(),
-                    ])
-                    ->action(fn (Paiement $record, array $data) => app(PaiementServiceContract::class)->annulerPaiement($record->id, $data['motif'])),
+                AmbassadorsDesign::goldenDialogModal(ViewAction::make())
+                    ->schema([
+                        Placeholder::make('numero_recu')->label('N° de reçu')->content(fn (Paiement $record): string => $record->numero_recu),
+                        Placeholder::make('eleve')->label('Élève')->content(fn (Paiement $record): string => trim("{$record->inscription?->eleve?->prenom} {$record->inscription?->eleve?->nom}")),
+                        Placeholder::make('montant')->label('Montant')->content(fn (Paiement $record): string => number_format((float) $record->montant, 0, ',', ' ').' XAF'),
+                        Placeholder::make('mode')->label('Mode de paiement')->content(fn (Paiement $record): string => ucfirst($record->mode)),
+                        Placeholder::make('reference_mobile_money')->label('Référence mobile money')->content(fn (Paiement $record): string => $record->reference_mobile_money ?? '—'),
+                        Placeholder::make('statut')->label('Statut')->content(fn (Paiement $record): string => ucfirst($record->statut)),
+                        Placeholder::make('encaisse_le')->label('Encaissé le')->content(fn (Paiement $record): string => $record->created_at?->format('d/m/Y H:i') ?? '—'),
+                        Placeholder::make('motif_annulation')->label('Motif d’annulation')->content(fn (Paiement $record): string => $record->motif_annulation ?? '—')->visible(fn (Paiement $record): bool => filled($record->motif_annulation)),
+                    ]),
+                AmbassadorsDesign::goldenDialogModal(
+                    Action::make('annuler')
+                        ->label('Annuler')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('danger')
+                        ->visible(fn (Paiement $record) => $record->statut === 'valide')
+                        ->requiresConfirmation()
+                        ->form([
+                            Textarea::make('motif')->label('Motif d’annulation')->required(),
+                        ])
+                        ->action(fn (Paiement $record, array $data) => app(PaiementServiceContract::class)->annulerPaiement($record->id, $data['motif']))
+                ),
             ])
             ->defaultSort('created_at', 'desc');
     }

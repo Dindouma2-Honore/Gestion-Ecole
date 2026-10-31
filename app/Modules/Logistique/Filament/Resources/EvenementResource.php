@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Logistique\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Modules\Logistique\Filament\Resources\EvenementResource\Pages;
 use App\Modules\Logistique\Filament\Resources\EvenementResource\RelationManagers\ParticipantsRelationManager;
 use App\Modules\Logistique\Models\Evenement;
@@ -19,6 +20,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 use UnitEnum;
 
 class EvenementResource extends Resource
@@ -30,6 +32,8 @@ class EvenementResource extends Resource
     protected static string|UnitEnum|null $navigationGroup = 'Logistique';
 
     protected static ?string $navigationLabel = 'Événements';
+
+    protected static bool $shouldRegisterNavigation = false;
 
     protected static ?string $modelLabel = 'événement';
 
@@ -43,19 +47,20 @@ class EvenementResource extends Resource
     {
         return $schema
             ->components([
+                TextInput::make('reference')->label('Référence')->unique(ignoreRecord: true),
                 TextInput::make('titre')->label('Titre')->required()->maxLength(255),
+                Select::make('type')->label('Type')->options(['rentree' => 'Rentrée scolaire', 'bulletins' => 'Remise des bulletins', 'conseil' => 'Conseil de classe', 'portes_ouvertes' => 'Portes ouvertes', 'culture' => 'Journée culturelle', 'sport' => 'Compétition sportive', 'sortie' => 'Sortie éducative', 'parents' => 'Réunion des parents', 'autre' => 'Autre'])->default('autre')->required(),
                 Textarea::make('description')->label('Description')->columnSpanFull(),
                 DateTimePicker::make('date_debut')->label('Début')->required(),
                 DateTimePicker::make('date_fin')->label('Fin')->required(),
                 TextInput::make('lieu')->label('Lieu')->maxLength(255),
+                Select::make('salle_id')->label('Espace requis')->searchable()->preload()->options(fn () => DB::table('salles')->orderBy('nom')->pluck('nom', 'id')->all()),
                 TextInput::make('budget_prevu')->label('Budget prévu')->numeric()->prefix('FCFA'),
                 Toggle::make('necessite_transport')->label('Nécessite un transport'),
                 Toggle::make('necessite_autorisation_parentale')->label('Nécessite une autorisation parentale'),
-                TextInput::make('responsable_id')
-                    ->label('ID responsable')
-                    ->numeric()
-                    ->required()
-                    ->helperText('users.id — en attendant un Select alimenté par le module Socle.'),
+                Select::make('responsable_id')->label('Responsable')->searchable()->preload()->options(fn () => DB::table('users')->orderBy('name')->pluck('name', 'id')->all())->required(),
+                Select::make('vehicule_id')->label('Véhicule requis')->searchable()->preload()->options(fn () => DB::table('vehicules')->orderBy('immatriculation')->pluck('immatriculation', 'id')->all()),
+                Textarea::make('materiel_requis')->label('Matériel requis'),
                 Select::make('statut')
                     ->label('Statut')
                     ->options([
@@ -69,7 +74,7 @@ class EvenementResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        $table = $table
             ->columns([
                 Tables\Columns\TextColumn::make('titre')->label('Titre')->searchable(),
                 Tables\Columns\TextColumn::make('date_debut')->label('Début')->dateTime('d/m/Y H:i'),
@@ -101,6 +106,8 @@ class EvenementResource extends Resource
             ->actions([
                 EditAction::make(),
             ]);
+
+        return RecordModal::configure($table, static::class);
     }
 
     public static function getRelations(): array

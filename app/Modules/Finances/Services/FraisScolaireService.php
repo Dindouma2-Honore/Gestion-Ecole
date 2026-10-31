@@ -218,6 +218,15 @@ class FraisScolaireService implements FraisScolaireServiceContract
         if (! $this->eleves->existe($eleveId)) {
             throw new EleveIntrouvableException($eleveId);
         }
+        if (! in_array($typeFrais, ['inscription', 'scolarite', 'examen', 'transport', 'cantine'], true)) {
+            throw new \InvalidArgumentException('Type de frais invalide.');
+        }
+        if (! in_array($type, ['remise_pourcentage', 'remise_montant', 'exoneration_totale'], true)) {
+            throw new \InvalidArgumentException('Type de remise invalide.');
+        }
+        if ($valeur < 0 || ($type === 'remise_pourcentage' && $valeur > 100)) {
+            throw new \InvalidArgumentException('La valeur de la remise est invalide.');
+        }
 
         $approbateurId = Auth::id();
 

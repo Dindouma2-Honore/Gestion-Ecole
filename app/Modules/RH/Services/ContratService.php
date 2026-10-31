@@ -20,6 +20,9 @@ class ContratService implements ContratServiceInterface
     {
         $chevauchement = Contrat::where('employe_id', $donnees['employe_id'])
             ->where('statut', 'actif')
+            ->where(function ($query) use ($donnees): void {
+                $query->whereNull('date_fin')->orWhereDate('date_fin', '>=', $donnees['date_debut']);
+            })
             ->exists();
 
         if ($chevauchement) {

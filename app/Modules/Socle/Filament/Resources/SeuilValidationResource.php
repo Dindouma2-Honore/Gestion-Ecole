@@ -14,6 +14,8 @@ use Filament\Tables\Table;
 
 class SeuilValidationResource extends Resource
 {
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $model = SeuilValidation::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-check-badge';

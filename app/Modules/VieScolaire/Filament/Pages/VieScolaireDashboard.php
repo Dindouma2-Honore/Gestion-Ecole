@@ -9,6 +9,11 @@ use App\Modules\VieScolaire\Filament\Resources\ReclamationResource;
 use App\Modules\VieScolaire\Filament\Resources\SortieEleveResource;
 use App\Modules\VieScolaire\Filament\Resources\VisiteInfirmerieResource;
 use App\Modules\VieScolaire\Filament\Resources\VisiteurResource;
+use App\Modules\VieScolaire\Models\IncidentVieScolaire;
+use App\Modules\VieScolaire\Models\Reclamation;
+use App\Modules\VieScolaire\Models\SortieEleve;
+use App\Modules\VieScolaire\Models\VisiteInfirmerie;
+use App\Modules\VieScolaire\Models\Visiteur;
 use Filament\Pages\Page;
 
 class VieScolaireDashboard extends Page
@@ -23,7 +28,35 @@ class VieScolaireDashboard extends Page
 
     protected static ?string $title = 'Vie scolaire et sécurité';
 
-    protected string $view = 'filament.pages.module-placeholder';
+    protected string $view = 'vie-scolaire::filament.pages.dashboard';
+
+    public function getIndicators(): array
+    {
+        return [
+            ['label' => 'Élèves sortis aujourd’hui', 'value' => SortieEleve::whereDate('heure_sortie', today())->count(), 'icon' => 'heroicon-o-arrow-right-on-rectangle'],
+            ['label' => 'Visiteurs présents', 'value' => Visiteur::whereNull('heure_sortie')->count(), 'icon' => 'heroicon-o-identification'],
+            ['label' => 'Infirmerie aujourd’hui', 'value' => VisiteInfirmerie::whereDate('date_heure', today())->count(), 'icon' => 'heroicon-o-heart'],
+            ['label' => 'Urgences médicales', 'value' => VisiteInfirmerie::whereDate('date_heure', today())->where('gravite', 'grave')->count(), 'icon' => 'heroicon-o-exclamation-circle'],
+            ['label' => 'Incidents ouverts', 'value' => IncidentVieScolaire::whereNotIn('statut', ['resolu', 'cloture', 'rejete', 'annule'])->count(), 'icon' => 'heroicon-o-exclamation-triangle'],
+            ['label' => 'Réclamations en retard', 'value' => Reclamation::whereNotIn('statut', ['resolue', 'cloturee'])->whereDate('delai_reponse', '<', today())->count(), 'icon' => 'heroicon-o-clock'],
+        ];
+    }
+
+    public function getPriorityActions(): array
+    {
+        $actions = [];
+        foreach (VisiteInfirmerie::whereDate('date_heure', today())->where('gravite', 'grave')->latest('date_heure')->limit(3)->get() as $item) {
+            $actions[] = ['label' => 'Urgence médicale', 'detail' => 'Passage à l’infirmerie #'.$item->id];
+        }
+        foreach (IncidentVieScolaire::whereIn('priorite', ['haute', 'urgente'])->whereNotIn('statut', ['resolu', 'cloture'])->latest('date_incident')->limit(3)->get() as $item) {
+            $actions[] = ['label' => $item->reference, 'detail' => $item->description];
+        }
+        foreach (Visiteur::whereNull('heure_sortie')->where('heure_entree', '<', now()->subHours(4))->limit(3)->get() as $item) {
+            $actions[] = ['label' => 'Visiteur présent depuis longtemps', 'detail' => $item->nom];
+        }
+
+        return array_slice($actions, 0, 6);
+    }
 
     public function getModuleIcon(): string
     {

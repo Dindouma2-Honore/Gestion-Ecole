@@ -3,6 +3,7 @@
 use App\Modules\Logistique\Contracts\MaintenanceServiceInterface;
 use App\Modules\Logistique\Models\DemandeIntervention;
 use App\Modules\Logistique\Models\Equipement;
+use App\Modules\Logistique\Models\PlanMaintenancePreventive;
 
 beforeEach(function () {
     $this->service ??= app(MaintenanceServiceInterface::class);
@@ -58,7 +59,7 @@ it('retourne les maintenances arrivées à échéance', function () {
     // (now() + frequenceJours) — donc pour tester "arrivée à échéance", on
     // crée les Plans directement via le Model avec une date déjà passée,
     // plutôt que de passer par le Service qui ne produirait jamais ce cas.
-    \App\Modules\Logistique\Models\PlanMaintenancePreventive::create([
+    PlanMaintenancePreventive::create([
         'equipement_id' => $this->equipement->id,
         'frequence_jours' => 30,
         'prochaine_echeance' => now()->subDay(),
@@ -68,7 +69,7 @@ it('retourne les maintenances arrivées à échéance', function () {
         'nom' => 'Photocopieur', 'numero_identification' => 'EQ-101', 'date_acquisition' => now(),
     ]);
     // Plan encore loin de son échéance -> ne doit pas apparaître
-    \App\Modules\Logistique\Models\PlanMaintenancePreventive::create([
+    PlanMaintenancePreventive::create([
         'equipement_id' => $equipementB->id,
         'frequence_jours' => 365,
         'prochaine_echeance' => now()->addMonths(6),

@@ -9,6 +9,7 @@ use App\Modules\Finances\Exceptions\RepartitionTranchesInvalideException;
 use App\Modules\Finances\Models\ConfigurationFraisClasse;
 use App\Modules\Finances\Models\Paiement;
 use App\Modules\Finances\Models\PaiementTrancheAllocation;
+use App\Modules\Finances\Support\RemiseScolariteCalculator;
 use App\Modules\Scolarite\Contracts\ClasseServiceInterface;
 use App\Modules\Socle\Contracts\AnneeScolaireServiceContract;
 use Illuminate\Support\Facades\DB;
@@ -68,8 +69,19 @@ class ConfigurationFraisClasseService implements ConfigurationFraisClasseService
     {
         $configuration = ConfigurationFraisClasse::query()->with('tranches')
             ->where('classe_id', $classeId)->where('annee_scolaire_id', $anneeScolaireId)->where('actif', true)->firstOrFail();
+        $montantNet = RemiseScolariteCalculator::montantNet(
+            $eleveId,
+            $anneeScolaireId,
+            (float) $configuration->montant_total,
+        );
+        $coefficient = (float) $configuration->montant_total > 0
+            ? $montantNet / (float) $configuration->montant_total
+            : 0.0;
         $totalPaye = round((float) Paiement::query()->where('eleve_id', $eleveId)
-            ->where('annee_scolaire_id', $anneeScolaireId)->where('statut', 'valide')->sum('montant'), 2);
+            ->where('annee_scolaire_id', $anneeScolaireId)
+            ->where('statut', 'valide')
+            ->whereIn('rubrique', ['tranches_classe', 'scolarite', 'tranche_1', 'tranche_2', 'tranche_3', 'tranche_4', 'tranche_5'])
+            ->sum('montant'), 2);
         $allocationsExistantes = PaiementTrancheAllocation::query()
             ->whereIn('tranche_frais_classe_id', $configuration->tranches->pluck('id'))
             ->whereHas('paiement', fn ($query) => $query
@@ -84,22 +96,23 @@ class ConfigurationFraisClasseService implements ConfigurationFraisClasseService
         $details = [];
 
         foreach ($configuration->tranches as $tranche) {
+            $montantTranche = round((float) $tranche->montant * $coefficient, 2);
             $payeAlloue = (float) ($allocationsExistantes[$tranche->id] ?? 0);
-            $payeHistorique = min(max(0.0, (float) $tranche->montant - $payeAlloue), $aAffecter);
+            $payeHistorique = min(max(0.0, $montantTranche - $payeAlloue), $aAffecter);
             $aAffecter = max(0.0, $aAffecter - $payeHistorique);
             $paye = $payeAlloue + $payeHistorique;
-            $reste = round((float) $tranche->montant - $paye, 2);
+            $reste = max(0.0, round($montantTranche - $paye, 2));
             $statut = $reste <= 0 ? 'payee' : ($paye > 0 ? 'partiellement_payee' : ($tranche->date_echeance->isPast() ? 'echue' : 'a_venir'));
             if ($tranche->date_echeance->lt($maintenant)) {
                 $montantRetard += $reste;
             }
             $details[] = ['id' => $tranche->id, 'ordre' => $tranche->ordre, 'libelle' => $tranche->libelle,
-                'montant' => (float) $tranche->montant, 'date_echeance' => $tranche->date_echeance->toDateString(),
+                'montant' => $montantTranche, 'date_echeance' => $tranche->date_echeance->toDateString(),
                 'paye' => $paye, 'reste' => $reste, 'statut' => $statut];
         }
 
-        return ['montant_total' => (float) $configuration->montant_total, 'total_paye' => min($totalPaye, (float) $configuration->montant_total),
-            'reste_a_payer' => max(0.0, round((float) $configuration->montant_total - $totalPaye, 2)),
+        return ['montant_total' => $montantNet, 'total_paye' => min($totalPaye, $montantNet),
+            'reste_a_payer' => max(0.0, round($montantNet - $totalPaye, 2)),
             'montant_en_retard' => round($montantRetard, 2), 'tranches' => $details];
     }
 }

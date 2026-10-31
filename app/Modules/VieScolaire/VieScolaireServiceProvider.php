@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\VieScolaire;
 
+use App\Modules\VieScolaire\Contracts\InstitutionalCalendarServiceInterface;
 use App\Modules\VieScolaire\Contracts\ReclamationServiceInterface;
 use App\Modules\VieScolaire\Contracts\SanteServiceInterface;
 use App\Modules\VieScolaire\Contracts\SortieEleveServiceInterface;
 use App\Modules\VieScolaire\Contracts\VisiteurServiceInterface;
+use App\Modules\VieScolaire\Services\InstitutionalCalendarService;
 use App\Modules\VieScolaire\Services\ReclamationService;
 use App\Modules\VieScolaire\Services\SanteService;
 use App\Modules\VieScolaire\Services\SortieEleveService;
@@ -22,10 +24,12 @@ class VieScolaireServiceProvider extends ServiceProvider
         $this->app->bind(VisiteurServiceInterface::class, VisiteurService::class);
         $this->app->bind(SanteServiceInterface::class, SanteService::class);
         $this->app->bind(ReclamationServiceInterface::class, ReclamationService::class);
+        $this->app->bind(InstitutionalCalendarServiceInterface::class, InstitutionalCalendarService::class);
     }
 
     public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
+        $this->loadViewsFrom(__DIR__.'/resources/views', 'vie-scolaire');
     }
 }

@@ -42,4 +42,28 @@ interface InscriptionFacturationPort
 
     /** @return array{nom:string, contenu:string}|null */
     public function getRecuDernierVersement(int $inscriptionId): ?array;
+
+    /** @return array<int, array{id: int, nom: string, montant: float}> */
+    public function getFraisDiversSouscrits(int $inscriptionId): array;
+
+    public function assurerFraisDiversParDefaut(): void;
+
+    public function calculerMontantMinimum(array $fraisOptionnels = []): float;
+
+    /** @return array<string, mixed> */
+    public function simulerRepartition(
+        float $montantVerse,
+        array $fraisOptionnels = [],
+        ?int $classeId = null,
+        ?int $anneeId = null,
+        ?int $eleveId = null,
+    ): array;
+
+    /** @return array<string, mixed> */
+    public function getDossierFinancierComplet(int $inscriptionId): array;
+
+    /** @return array<string, mixed> */
+    public function simulerTransfertFinancier(int $inscriptionId, int $nouvelleClasseId): array;
+
+    public function reallouerApresTransfert(int $inscriptionId, int $nouvelleClasseId): void;
 }

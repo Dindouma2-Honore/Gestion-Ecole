@@ -16,8 +16,15 @@ class DisciplinePersonnelService implements DisciplinePersonnelServiceContract
         private readonly AuditServiceContract $audit
     ) {}
 
-    public function enregistrerSanction(int $employeId, string $type, string $motif, ?int $dureeJours = null): object
-    {
+    public function enregistrerSanction(
+        int $employeId,
+        string $type,
+        string $motif,
+        ?int $dureeJours = null,
+        ?\DateTimeInterface $dateSanction = null,
+        ?int $documentJustificatifId = null,
+        ?string $observations = null
+    ): object {
         if (empty(trim($motif))) {
             throw new SanctionSansMotifException;
         }
@@ -30,8 +37,10 @@ class DisciplinePersonnelService implements DisciplinePersonnelServiceContract
             'employe_id' => $employeId,
             'type' => $type,
             'motif' => $motif,
+            'observations' => $observations,
             'duree_jours' => $dureeJours,
-            'date_sanction' => now(),
+            'date_sanction' => $dateSanction ?? now(),
+            'document_justificatif_id' => $documentJustificatifId,
             'statut' => 'en_attente_validation',
             'created_by' => Auth::id() ?? 1,
         ]);
@@ -43,10 +52,13 @@ class DisciplinePersonnelService implements DisciplinePersonnelServiceContract
 
     public function valider(int $sanctionId, int $validateurId): void
     {
-        SanctionPersonnel::where('id', $sanctionId)->update([
+        $sanction = SanctionPersonnel::findOrFail($sanctionId);
+        $sanction->update([
             'statut' => 'validee',
             'valide_par' => $validateurId,
         ]);
+
+        $this->audit->enregistrer($sanction, "Validation de la sanction #{$sanctionId}");
     }
 
     public function annuler(int $sanctionId, string $motifAnnulation): void

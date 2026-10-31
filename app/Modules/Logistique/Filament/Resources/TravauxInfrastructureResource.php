@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Logistique\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Modules\Logistique\Filament\Resources\TravauxInfrastructureResource\Pages;
 use App\Modules\Logistique\Models\TravauxInfrastructure;
 use BackedEnum;
@@ -16,6 +17,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 use UnitEnum;
 
 class TravauxInfrastructureResource extends Resource
@@ -28,13 +30,15 @@ class TravauxInfrastructureResource extends Resource
 
     protected static ?string $navigationLabel = 'Travaux';
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $modelLabel = 'travaux';
 
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
-                TextInput::make('salle_id')->label('ID salle')->numeric()->required(),
+                Select::make('salle_id')->label('Espace concerné')->searchable()->preload()->options(fn () => DB::table('salles')->orderBy('nom')->pluck('nom', 'id')->all())->required(),
                 Textarea::make('description')->label('Description')->required()->columnSpanFull(),
                 DatePicker::make('date_debut')->label('Date de début')->required(),
                 DatePicker::make('date_fin_prevue')->label('Date de fin prévue'),
@@ -49,9 +53,9 @@ class TravauxInfrastructureResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        $table = $table
             ->columns([
-                Tables\Columns\TextColumn::make('salle_id')->label('Salle (ID)'),
+                Tables\Columns\TextColumn::make('salle.nom')->label('Espace'),
                 Tables\Columns\TextColumn::make('description')->label('Description')->limit(50),
                 Tables\Columns\TextColumn::make('date_debut')->label('Début')->date(),
                 Tables\Columns\TextColumn::make('date_fin_prevue')->label('Fin prévue')->date()->placeholder('—'),
@@ -61,6 +65,8 @@ class TravauxInfrastructureResource extends Resource
             ->actions([
                 EditAction::make(),
             ]);
+
+        return RecordModal::configure($table, static::class);
     }
 
     public static function getPages(): array

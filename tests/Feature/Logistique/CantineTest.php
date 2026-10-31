@@ -2,6 +2,7 @@
 
 use App\Modules\Logistique\Contracts\CantineServiceInterface;
 use App\Modules\Logistique\Models\AbonnementCantine;
+use App\Modules\Logistique\Models\PresenceCantine;
 use App\Modules\Socle\Models\AnneeScolaire;
 
 beforeEach(function () {
@@ -38,7 +39,7 @@ it('enregistre une présence au repas', function () {
 
     $this->service->enregistrerPresenceRepas($abonnement->id, now(), present: true);
 
-    expect(\App\Modules\Logistique\Models\PresenceCantine::where('abonnement_id', $abonnement->id)->exists())->toBeTrue();
+    expect(PresenceCantine::where('abonnement_id', $abonnement->id)->exists())->toBeTrue();
 });
 
 it('vérifie la compatibilité du menu du jour avec les allergies de l\'élève', function () {

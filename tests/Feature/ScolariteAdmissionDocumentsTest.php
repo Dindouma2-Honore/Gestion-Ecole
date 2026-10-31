@@ -55,11 +55,15 @@ class ScolariteAdmissionDocumentsTest extends TestCase
         $user->assignRole('Fondateur');
 
         $this->actingAs($user)->get('/admin/eleves')->assertSuccessful()
-            ->assertSee('Élèves &amp; admissions', escape: false)
+            ->assertSee('Admissions')
             ->assertSee('Parents &amp; tuteurs', escape: false)
             ->assertSee('Inscriptions')
-            ->assertSee('Classes')
-            ->assertSee('Documents d’admission')
+            ->assertSee('Grilles tarifaires')
+            ->assertDontSee('Transferts / affectations')
+            ->assertDontSee('Factures de préinscription')
+            ->assertDontSee('Frais et échéances par classe')
+            ->assertDontSee('Recouvrement scolaire')
+            ->assertDontSee('Documents d’admission')
             ->assertSee('Bilan journalier')
             ->assertSee('Statut des paiements');
     }

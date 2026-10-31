@@ -19,7 +19,7 @@ class JourFerieResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-calendar-days';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Années & périodes';
+    protected static string|\UnitEnum|null $navigationGroup = 'Établissement & paramètres';
 
     protected static ?string $modelLabel = 'Jour férié';
 
@@ -38,7 +38,7 @@ class JourFerieResource extends Resource
     {
         return $table->columns([
             TextColumn::make('date')->date('d/m/Y')->sortable(), TextColumn::make('libelle')->searchable(),
-            TextColumn::make('niveau.nom')->label('Niveau')->placeholder('Tous les niveaux'),
+            TextColumn::make('niveau_label')->state(fn ($record) => $record->niveau?->name)->label('Niveau')->placeholder('Tous les niveaux'),
         ])->defaultSort('date');
     }
 

@@ -3,6 +3,8 @@
 namespace App\Modules\RH\Models;
 
 use App\Models\User;
+use App\Modules\Scolarite\Contracts\AcademicStructureReadContract;
+use App\Modules\Scolarite\Data\AcademicStructureItemDTO;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -28,7 +30,7 @@ class Employe extends Model
         'photo',
         'role_id',
         'poste_administratif_id',
-        'categorie_anciennete_id',
+        'palier_anciennete_id',
         'contrat_id',
         'poste',
         'departement',
@@ -78,9 +80,9 @@ class Employe extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function niveau(): BelongsTo
+    public function getNiveauAttribute(): ?AcademicStructureItemDTO
     {
-        return $this->belongsTo('App\Modules\Socle\Models\Niveau', 'niveau_id');
+        return $this->niveau_id === null ? null : app(AcademicStructureReadContract::class)->niveau((int) $this->niveau_id);
     }
 
     public function historiqueCarriere(): HasMany
@@ -120,7 +122,7 @@ class Employe extends Model
 
     public function categorieAnciennete(): BelongsTo
     {
-        return $this->belongsTo(CategoriePersonnel::class, 'categorie_anciennete_id');
+        return $this->belongsTo(PalierAnciennete::class, 'palier_anciennete_id');
     }
 
     public function primesAttribuees(): HasMany
@@ -161,5 +163,10 @@ class Employe extends Model
     public function bulletins(): HasMany
     {
         return $this->hasMany(BulletinPaie::class, 'employe_id');
+    }
+
+    public function candidature(): HasOne
+    {
+        return $this->hasOne(Candidature::class, 'employe_id');
     }
 }

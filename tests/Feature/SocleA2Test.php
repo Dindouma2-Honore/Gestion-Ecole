@@ -5,18 +5,20 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\User;
-use App\Modules\Socle\Contracts\ParametrageServiceContract;
+use App\Modules\Scolarite\Models\Niveau;
 use App\Modules\Socle\Contracts\NumerotationServiceContract;
+use App\Modules\Socle\Contracts\ParametrageServiceContract;
+use App\Modules\Socle\Exceptions\FormatNumerotationInexistantException;
 use App\Modules\Socle\Models\ConfigEtablissement;
 use App\Modules\Socle\Models\FormatNumerotation;
 use App\Modules\Socle\Models\JourFerie;
-use App\Modules\Socle\Models\Niveau;
 use App\Modules\Socle\Models\TemplateNotification;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use DateTimeImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class SocleA2Test extends TestCase
@@ -52,7 +54,7 @@ class SocleA2Test extends TestCase
 
     public function test_active_notification_template_replaces_documented_placeholders(): void
     {
-        TemplateNotification::create([
+        $template = TemplateNotification::create([
             'code' => 'ABSENCE',
             'canal' => 'sms',
             'contenu' => 'Bonjour {parent}, absence de {eleve}.',
@@ -67,7 +69,7 @@ class SocleA2Test extends TestCase
         );
 
         $this->assertSame('Bonjour Marie, absence de Paul.', $contenu);
-        $this->assertSame('Bonjour {parent}, absence de {eleve}.', TemplateNotification::first()->corps);
+        $this->assertSame('Bonjour {parent}, absence de {eleve}.', $template->fresh()->corps);
     }
 
     public function test_numerotation_is_incremented_and_supports_documented_placeholders(): void
@@ -110,6 +112,48 @@ class SocleA2Test extends TestCase
             'niveau' => 'PRIM',
         ]));
         $this->assertSame(2, $format->fresh()->prochain_numero);
+    }
+
+    public function test_unknown_numbering_sequence_is_refused_without_creating_a_counter(): void
+    {
+        $service = app(NumerotationServiceContract::class);
+
+        $caught = null;
+        try {
+            $service->next('sequence_inconnue_test', ['annee' => '2026']);
+        } catch (FormatNumerotationInexistantException $exception) {
+            $caught = $exception;
+        }
+
+        $this->assertInstanceOf(FormatNumerotationInexistantException::class, $caught);
+        $this->assertStringContainsString('sequence_inconnue_test', $caught->getMessage());
+        $this->assertDatabaseMissing('formats_numerotation', ['type_document' => 'sequence_inconnue_test']);
+    }
+
+    public function test_a_failed_numbering_generation_leaves_the_counter_intact(): void
+    {
+        $format = FormatNumerotation::create([
+            'type_document' => 'recu_sans_compteur_test',
+            'format' => 'REC-{annee}-000',
+            'prochain_numero' => 7,
+        ]);
+        $service = app(NumerotationServiceContract::class);
+
+        $caught = null;
+        try {
+            $service->next('recu_sans_compteur_test', ['annee' => '2026']);
+        } catch (ValidationException $exception) {
+            $caught = $exception;
+        }
+
+        $this->assertInstanceOf(ValidationException::class, $caught);
+        $this->assertSame(7, $format->fresh()->prochain_numero);
+        $this->assertNull($format->fresh()->derniere_cle_compteur);
+
+        $format->update(['format' => 'REC-{annee}-{SEQ:4}']);
+
+        $this->assertSame('REC-2026-0007', $service->next('recu_sans_compteur_test', ['annee' => '2026']));
+        $this->assertSame(8, $format->fresh()->prochain_numero);
     }
 
     public function test_default_formats_are_clearly_marked_as_examples_to_validate(): void

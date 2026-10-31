@@ -7,10 +7,9 @@ namespace App\Modules\Scolarite\Filament\Resources;
 use App\Modules\Scolarite\Contracts\FraisServiceContract;
 use App\Modules\Scolarite\Exceptions\CategorieFraisEnUsageException;
 use App\Modules\Scolarite\Filament\Resources\CategorieFraisResource\Pages;
+use App\Modules\Scolarite\Filament\Support\ScolariteActions;
 use App\Modules\Scolarite\Models\CategorieFrais;
 use BackedEnum;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -29,9 +28,11 @@ class CategorieFraisResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-tag';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Scolarité';
+    protected static string|UnitEnum|null $navigationGroup = 'Frais scolaires';
 
-    protected static ?string $navigationLabel = 'Catégories de frais';
+    protected static ?string $navigationLabel = 'Catégories';
+
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $modelLabel = 'catégorie de frais';
 
@@ -46,6 +47,8 @@ class CategorieFraisResource extends Resource
 
     public static function table(Table $table): Table
     {
+        ScolariteActions::configureTable($table, 'edit');
+
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('nom')->label('Nom')->searchable()->sortable(),
@@ -55,15 +58,9 @@ class CategorieFraisResource extends Resource
                     ->money('XAF'),
             ])
             ->actions([
-                EditAction::make(),
-                DeleteAction::make()
-                    ->using(function (CategorieFrais $record) {
-                        try {
-                            app(FraisServiceContract::class)->supprimerCategorie($record->id);
-                        } catch (CategorieFraisEnUsageException $e) {
-                            Notification::make()->title('Suppression impossible')->body($e->getMessage())->danger()->send();
-                        }
-                    }),
+                ScolariteActions::edit(),
+                ScolariteActions::view(),
+                ScolariteActions::delete(),
             ]);
     }
 

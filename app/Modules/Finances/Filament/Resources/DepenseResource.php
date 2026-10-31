@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Finances\Filament\Resources;
 
 use App\Filament\Support\AmbassadorsDesign;
+use App\Filament\Support\RecordModal;
 use App\Models\User;
 use App\Modules\Finances\Contracts\GestionDepenseServiceContract;
 use App\Modules\Finances\Filament\Resources\DepenseResource\Pages;
@@ -55,7 +56,7 @@ class DepenseResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table->columns([
+        return RecordModal::configure($table->columns([
             TextColumn::make('rubrique.nom')->label('Rubrique')->searchable()->sortable(),
             TextColumn::make('libelle')->searchable(),
             TextColumn::make('montant')->money('XAF')->sortable(),
@@ -77,7 +78,7 @@ class DepenseResource extends Resource
             Action::make('payer')->color('success')->icon('heroicon-o-banknotes')->requiresConfirmation()
                 ->visible(fn (Depense $record): bool => $record->statut === 'validee' && self::peutGerer())
                 ->action(fn (Depense $record) => app(GestionDepenseServiceContract::class)->marquerPayee($record->id)),
-        ]);
+        ]), static::class);
     }
 
     public static function canAccess(): bool

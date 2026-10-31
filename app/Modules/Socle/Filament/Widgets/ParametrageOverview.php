@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Socle\Filament\Widgets;
 
+use App\Modules\Scolarite\Contracts\AcademicStructureCatalogContract;
 use App\Modules\Socle\Filament\Resources\FormatNumerotationResource;
 use App\Modules\Socle\Models\FormatNumerotation;
 use App\Modules\Socle\Models\JourFerie;
-use App\Modules\Socle\Models\Niveau;
 use App\Modules\Socle\Models\SeuilValidation;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -21,7 +21,7 @@ class ParametrageOverview extends StatsOverviewWidget
     protected function getStats(): array
     {
         return [
-            Stat::make('Niveaux', Niveau::query()->count())
+            Stat::make('Niveaux', count(app(AcademicStructureCatalogContract::class)->niveaux()))
                 ->description('Niveaux d’enseignement définis')
                 ->descriptionIcon('heroicon-o-academic-cap')
                 ->color('primary'),

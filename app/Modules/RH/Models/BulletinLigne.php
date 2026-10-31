@@ -14,12 +14,14 @@ class BulletinLigne extends Model
         'type',
         'libelle',
         'montant',
+        'date_reference',
     ];
 
     protected function casts(): array
     {
         return [
             'montant' => 'decimal:2',
+            'date_reference' => 'date',
         ];
     }
 

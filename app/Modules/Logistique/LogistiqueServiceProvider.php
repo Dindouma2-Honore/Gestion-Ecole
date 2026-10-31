@@ -6,6 +6,7 @@ namespace App\Modules\Logistique;
 
 use App\Modules\Logistique\Contracts\BibliothequeServiceInterface;
 use App\Modules\Logistique\Contracts\CantineServiceInterface;
+use App\Modules\Logistique\Contracts\CatalogueMaterielInterface;
 use App\Modules\Logistique\Contracts\EquipementServiceInterface;
 use App\Modules\Logistique\Contracts\EvenementServiceInterface;
 use App\Modules\Logistique\Contracts\InfrastructureServiceInterface;
@@ -13,6 +14,7 @@ use App\Modules\Logistique\Contracts\MaintenanceServiceInterface;
 use App\Modules\Logistique\Contracts\TransportServiceInterface;
 use App\Modules\Logistique\Services\BibliothequeService;
 use App\Modules\Logistique\Services\CantineService;
+use App\Modules\Logistique\Services\CatalogueMaterielService;
 use App\Modules\Logistique\Services\EquipementService;
 use App\Modules\Logistique\Services\EvenementService;
 use App\Modules\Logistique\Services\InfrastructureService;
@@ -26,6 +28,7 @@ class LogistiqueServiceProvider extends ServiceProvider
     {
         $this->app->bind(InfrastructureServiceInterface::class, InfrastructureService::class);
         $this->app->bind(EquipementServiceInterface::class, EquipementService::class);
+        $this->app->bind(CatalogueMaterielInterface::class, CatalogueMaterielService::class);
         $this->app->bind(MaintenanceServiceInterface::class, MaintenanceService::class);
         $this->app->bind(BibliothequeServiceInterface::class, BibliothequeService::class);
         $this->app->bind(CantineServiceInterface::class, CantineService::class);
@@ -36,5 +39,6 @@ class LogistiqueServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
+        $this->loadViewsFrom(__DIR__.'/resources/views', 'logistique');
     }
 }

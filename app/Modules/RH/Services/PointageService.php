@@ -5,6 +5,8 @@ namespace App\Modules\RH\Services;
 use App\Modules\RH\Contracts\CongeServiceContract;
 use App\Modules\RH\Contracts\PointageServiceContract;
 use App\Modules\RH\Exceptions\CorrectionSansMotifException;
+use App\Modules\RH\Exceptions\PointageDejaExistantException;
+use App\Modules\RH\Models\AbsencePersonnel;
 use App\Modules\RH\Models\Pointage;
 use App\Modules\Socle\Contracts\AuditServiceContract;
 use App\Modules\Socle\Contracts\ParametrageServiceContract;
@@ -26,14 +28,33 @@ class PointageService implements PointageServiceContract
         $date = $dateHeure->format('Y-m-d');
         $heure = $dateHeure->format('H:i:s');
 
-        $pointage = Pointage::firstOrCreate(
-            ['employe_id' => $employeId, 'date_pointage' => $date],
-            ['mode_pointage' => $modePointage, 'terminal_id' => $terminalId]
-        );
+        $pointage = Pointage::query()
+            ->where('employe_id', $employeId)
+            ->whereDate('date_pointage', $date)
+            ->first();
 
-        if ($type === 'arrivee' && is_null($pointage->heure_arrivee)) {
+        if ($type === 'arrivee' && $pointage && ! is_null($pointage->heure_arrivee)) {
+            throw new PointageDejaExistantException($employeId, $date);
+        }
+
+        if (! $pointage) {
+            $pointage = Pointage::create([
+                'employe_id' => $employeId,
+                'date_pointage' => $date,
+                'mode_pointage' => $modePointage,
+                'terminal_id' => $terminalId,
+            ]);
+        }
+
+        if ($type === 'arrivee') {
+            if (! is_null($pointage->heure_depart) && $heure > $pointage->heure_depart) {
+                throw new \InvalidArgumentException("L'heure d'arrivée ne peut pas être postérieure à l'heure de départ.");
+            }
             $pointage->update(['heure_arrivee' => $heure]);
         } elseif ($type === 'depart') {
+            if (! is_null($pointage->heure_arrivee) && $heure < $pointage->heure_arrivee) {
+                throw new \InvalidArgumentException("L'heure de départ ne peut pas être antérieure à l'heure d'arrivée.");
+            }
             $pointage->update(['heure_depart' => $heure]);
         }
     }
@@ -41,10 +62,17 @@ class PointageService implements PointageServiceContract
     public function corrigerManuel(int $pointageId, ?string $heureArrivee, ?string $heureDepart, string $motif): void
     {
         if (empty(trim($motif))) {
-            throw new CorrectionSansMotifException();
+            throw new CorrectionSansMotifException;
         }
 
         $pointage = Pointage::findOrFail($pointageId);
+
+        $arrivee = $heureArrivee ?? $pointage->heure_arrivee;
+        $depart = $heureDepart ?? $pointage->heure_depart;
+
+        if ($arrivee && $depart && $depart < $arrivee) {
+            throw new \InvalidArgumentException("L'heure de départ ne peut pas être antérieure à l'heure d'arrivée.");
+        }
 
         $pointage->update([
             'heure_arrivee' => $heureArrivee ?? $pointage->heure_arrivee,
@@ -63,8 +91,10 @@ class PointageService implements PointageServiceContract
         $count = 0;
 
         foreach ($joursOuvrables as $jour) {
+            $dateStr = $jour->format('Y-m-d');
+
             $aPointe = Pointage::where('employe_id', $employeId)
-                ->where('date_pointage', $jour->format('Y-m-d'))
+                ->whereDate('date_pointage', $dateStr)
                 ->whereNotNull('heure_arrivee')
                 ->exists();
 
@@ -73,6 +103,17 @@ class PointageService implements PointageServiceContract
             }
 
             if ($this->conge->estEnCongeAutorise($employeId, $jour)) {
+                continue;
+            }
+
+            $estJustifie = AbsencePersonnel::where('employe_id', $employeId)
+                ->whereIn('type', ['absence_justifiee', 'permission', 'conge'])
+                ->where('statut', 'validee')
+                ->whereDate('date_debut', '<=', $dateStr)
+                ->whereDate('date_fin', '>=', $dateStr)
+                ->exists();
+
+            if ($estJustifie) {
                 continue;
             }
 
@@ -96,6 +137,7 @@ class PointageService implements PointageServiceContract
             if ($this->parametrage->estJourFerie($jour)) {
                 return false;
             }
+
             return true;
         });
     }

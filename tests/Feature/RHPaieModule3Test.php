@@ -14,7 +14,7 @@ use App\Modules\RH\Exceptions\BulletinDejaExistantException;
 use App\Modules\RH\Exceptions\BulletinDejaValideException;
 use App\Modules\RH\Exceptions\ContratChevauchementException;
 use App\Modules\RH\Models\BulletinPaie;
-use App\Modules\RH\Models\CategoriePersonnel;
+use App\Modules\RH\Models\PalierAnciennete;
 use App\Modules\RH\Models\Contrat;
 use App\Modules\RH\Models\Employe;
 use App\Modules\RH\Models\Prime;
@@ -85,6 +85,11 @@ class RHPaieModule3Test extends TestCase
             {
                 return 80;
             }
+
+            public function getNombreHeuresTravailleesPourPeriode(int $employeId, \DateTimeInterface $periodeDebut, \DateTimeInterface $periodeFin): float
+            {
+                return 80;
+            }
         });
 
         $bulletin = app(PaieServiceContract::class)->calculerBulletin($this->employe->id, 9, 2026);
@@ -106,6 +111,11 @@ class RHPaieModule3Test extends TestCase
         $this->app->instance(HeuresTravailleesServiceContract::class, new class implements HeuresTravailleesServiceContract
         {
             public function getNombreHeuresTravaillees(int $employeId, int $mois, int $annee): float
+            {
+                return 20;
+            }
+
+            public function getNombreHeuresTravailleesPourPeriode(int $employeId, \DateTimeInterface $periodeDebut, \DateTimeInterface $periodeFin): float
             {
                 return 20;
             }
@@ -165,22 +175,22 @@ class RHPaieModule3Test extends TestCase
 
     public function test_seniority_progression_updates_category_and_salary_grid_automatically(): void
     {
-        $junior = CategoriePersonnel::query()->where('nom', 'Junior')->firstOrFail();
-        $confirme = CategoriePersonnel::query()->where('nom', 'Confirmé')->firstOrFail();
+        $junior = PalierAnciennete::query()->where('nom', 'Junior')->firstOrFail();
+        $confirme = PalierAnciennete::query()->where('nom', 'Confirmé')->firstOrFail();
         $ligneJunior = GrilleSalariale::query()->create([
-            'categorie_personnel_id' => $junior->id, 'base_calcul' => 'generale',
+            'palier_anciennete_id' => $junior->id, 'base_calcul' => 'generale',
             'salaire_base' => 100000, 'taux_horaire' => 0, 'date_effet' => '2026-09-02', 'actif' => true,
         ]);
         $ligneConfirme = GrilleSalariale::query()->create([
-            'categorie_personnel_id' => $confirme->id, 'base_calcul' => 'generale',
+            'palier_anciennete_id' => $confirme->id, 'base_calcul' => 'generale',
             'salaire_base' => 150000, 'taux_horaire' => 0, 'date_effet' => '2026-09-02', 'actif' => true,
         ]);
-        $this->employe->update(['date_embauche' => '2023-09-01', 'categorie_anciennete_id' => $junior->id]);
+        $this->employe->update(['date_embauche' => '2023-09-01', 'palier_anciennete_id' => $junior->id]);
         $contrat = $this->contrat(['grille_salariale_id' => $ligneJunior->id, 'salaire_base' => 100000]);
 
         $bulletin = app(PaieServiceContract::class)->calculerBulletin($this->employe->id, 9, 2026);
 
-        $this->assertSame($confirme->id, $this->employe->fresh()->categorie_anciennete_id);
+        $this->assertSame($confirme->id, $this->employe->fresh()->palier_anciennete_id);
         $this->assertSame($ligneConfirme->id, $contrat->fresh()->grille_salariale_id);
         $this->assertSame(150000.0, (float) $bulletin->salaire_base);
     }

@@ -5,9 +5,12 @@ Application de gestion scolaire modulaire construite avec PHP 8.3+, Laravel
 
 ## Documentation essentielle
 
+- [Architecture complète du projet](ARCHITECTURE.md) — carte des modules, responsabilités, couches et échanges.
 - [Guide complet du développeur](docs/development/guide-developpeur.md)
 - [Socle visuel Filament](docs/ui/filament-design-system.md)
 - [Règles de frontières modulaires](deptrac.yaml)
+
+Chaque module possède également son propre document `ARCHITECTURE.md` dans `app/Modules/<Module>/`.
 
 ## Démarrage rapide
 
@@ -41,3 +44,7 @@ Parcours de l’application :
 Aucune Pull Request ne doit être fusionnée si les tests ou Deptrac échouent.
 Un module peut utiliser les `Contracts` d’un autre module, jamais ses classes
 internes.
+
+## Développement Linux et Mac
+
+Suivre le [workflow partagé](docs/development/developpement-parallele.md) : `develop` est la base commune, `work/linux` et `work/mac` les branches de travail. Voir aussi le [guide de transfert Mac](docs/migration-mac.md).

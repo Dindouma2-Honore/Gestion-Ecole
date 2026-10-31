@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Pedagogie\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Modules\Pedagogie\Contracts\EvaluationServiceInterface;
+use App\Modules\Pedagogie\Contracts\NoteServiceInterface;
 use App\Modules\Pedagogie\Filament\Resources\EvaluationResource\Pages;
 use App\Modules\Pedagogie\Models\Evaluation;
 use App\Modules\Scolarite\Contracts\ClasseServiceInterface;
@@ -45,6 +47,7 @@ class EvaluationResource extends Resource
                 ->relationship('matiere', 'nom')
                 ->searchable()
                 ->preload()
+                ->disabled(fn (?Evaluation $record) => $record !== null && ($record->verrouillee || $record->notes()->exists()))
                 ->required(),
 
             Select::make('classe_id')
@@ -56,6 +59,7 @@ class EvaluationResource extends Resource
                         ->pluck('nom', 'id');
                 })
                 ->searchable()
+                ->disabled(fn (?Evaluation $record) => $record !== null && ($record->verrouillee || $record->notes()->exists()))
                 ->required(),
 
             Select::make('annee_scolaire_id')
@@ -77,7 +81,13 @@ class EvaluationResource extends Resource
             ])->default('devoir')->required(),
 
             DatePicker::make('date_evaluation')->label('Date')->required(),
-            TextInput::make('bareme')->label('Barème')->numeric()->minValue(0.01)->default(20)->required(),
+            TextInput::make('bareme')
+                ->label('Barème')
+                ->numeric()
+                ->minValue(0.01)
+                ->default(20)
+                ->disabled(fn (?Evaluation $record) => $record !== null && ($record->verrouillee || $record->notes()->exists()))
+                ->required(),
             TextInput::make('coefficient_evaluation')->label('Coefficient de l’évaluation')->numeric()->minValue(0.01)->default(1)->required(),
 
             // Sujet d'examen proposé par l'enseignant : reste en attente de
@@ -119,7 +129,7 @@ class EvaluationResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table->columns([
+        return RecordModal::configure($table->columns([
             Tables\Columns\TextColumn::make('titre')->searchable(),
             Tables\Columns\TextColumn::make('matiere.nom')->label('Matière'),
             Tables\Columns\TextColumn::make('classe_id')->label('Classe #'),
@@ -143,7 +153,11 @@ class EvaluationResource extends Resource
                 ->label('Valider le sujet')
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
-                ->visible(fn (Evaluation $record) => $record->statut === 'soumis')
+                ->visible(fn (Evaluation $record) => $record->statut === 'soumis' && (
+                    Auth::user() === null || ! method_exists(Auth::user(), 'hasAnyRole') || Auth::user()->hasAnyRole([
+                        'Directeur', 'Directrice', 'Fondateur', 'Super Admin', 'Admin', 'Direction', 'Coordinateur Pédagogique',
+                    ])
+                ))
                 ->action(function (Evaluation $record): void {
                     try {
                         app(EvaluationServiceInterface::class)->validerSujet($record->id, Auth::id() ?? 1);
@@ -152,7 +166,6 @@ class EvaluationResource extends Resource
                             ->title('Sujet validé')
                             ->body("Le sujet de l'évaluation #{$record->id} a été validé. Les notes peuvent maintenant être saisies.")
                             ->success()
-                            ->duration(6000)
                             ->send();
                     } catch (\Throwable $e) {
                         Notification::make()
@@ -168,7 +181,11 @@ class EvaluationResource extends Resource
                 ->label('Rejeter le sujet')
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
-                ->visible(fn (Evaluation $record) => $record->statut === 'soumis')
+                ->visible(fn (Evaluation $record) => $record->statut === 'soumis' && (
+                    Auth::user() === null || ! method_exists(Auth::user(), 'hasAnyRole') || Auth::user()->hasAnyRole([
+                        'Directeur', 'Directrice', 'Fondateur', 'Super Admin', 'Admin', 'Direction', 'Coordinateur Pédagogique',
+                    ])
+                ))
                 ->form([
                     Textarea::make('motif')
                         ->label('Motif du rejet (obligatoire)')
@@ -177,13 +194,12 @@ class EvaluationResource extends Resource
                 ])
                 ->action(function (Evaluation $record, array $data): void {
                     try {
-                        app(EvaluationServiceInterface::class)->rejeterSujet($record->id, (string) $data['motif']);
+                        app(EvaluationServiceInterface::class)->rejeterSujet($record->id, (string) $data['motif'], Auth::id());
 
                         Notification::make()
                             ->title('Sujet rejeté')
                             ->body("Le sujet de l'évaluation #{$record->id} a été rejeté.")
                             ->warning()
-                            ->duration(6000)
                             ->send();
                     } catch (\Throwable $e) {
                         Notification::make()
@@ -194,7 +210,63 @@ class EvaluationResource extends Resource
                             ->send();
                     }
                 }),
-        ]);
+
+            Action::make('soumettreNotes')
+                ->label('Soumettre les notes')
+                ->icon('heroicon-o-paper-airplane')
+                ->color('warning')
+                ->visible(fn (Evaluation $record) => $record->statut === 'valide' && ! $record->verrouillee && $record->notes()->where('statut', '!=', 'valide')->exists())
+                ->requiresConfirmation()
+                ->modalHeading('Soumettre les notes pour approbation')
+                ->modalDescription('Êtes-vous sûr de vouloir soumettre toutes les notes saisies pour cette évaluation ?')
+                ->action(function (Evaluation $record): void {
+                    try {
+                        app(NoteServiceInterface::class)->soumettreNotes($record->id, Auth::id());
+
+                        Notification::make()
+                            ->title('Notes soumises')
+                            ->body("Les notes de l'évaluation #{$record->id} ont été soumises pour approbation du Fondateur.")
+                            ->success()
+                            ->send();
+                    } catch (\Throwable $e) {
+                        Notification::make()
+                            ->title('Échec de la soumission')
+                            ->body('Erreur : '.$e->getMessage())
+                            ->danger()
+                            ->persistent()
+                            ->send();
+                    }
+                }),
+
+            Action::make('approuverNotes')
+                ->label('Approuver et geler')
+                ->icon('heroicon-o-lock-closed')
+                ->color('danger')
+                ->visible(fn (Evaluation $record) => $record->statut === 'valide' && ! $record->verrouillee && (
+                    Auth::user() === null || ! method_exists(Auth::user(), 'hasAnyRole') || Auth::user()->hasAnyRole(['Fondateur', 'Super Admin'])
+                ))
+                ->requiresConfirmation()
+                ->modalHeading('Approuver et geler les notes')
+                ->modalDescription('Attention : cette action fige définitivement les notes et verrouille l\'évaluation. Seul un déblocage exceptionnel du Fondateur pourra autoriser une modification ultérieure.')
+                ->action(function (Evaluation $record): void {
+                    try {
+                        app(NoteServiceInterface::class)->approuverNotes($record->id, Auth::id() ?? 1);
+
+                        Notification::make()
+                            ->title('Notes approuvées et gelées')
+                            ->body("Les notes de l'évaluation #{$record->id} sont désormais gelées.")
+                            ->success()
+                            ->send();
+                    } catch (\Throwable $e) {
+                        Notification::make()
+                            ->title('Échec de l\'approbation')
+                            ->body('Erreur : '.$e->getMessage())
+                            ->danger()
+                            ->persistent()
+                            ->send();
+                    }
+                }),
+        ]), static::class);
     }
 
     public static function getPages(): array

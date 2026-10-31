@@ -9,11 +9,13 @@ use Illuminate\Database\Eloquent\Model;
 class DossierSante extends Model
 {
     public $timestamps = false;
+
     protected $table = 'dossiers_sante';
 
     protected $fillable = [
         'eleve_id', 'groupe_sanguin', 'allergies', 'maladies_chroniques',
-        'medicaments_autorises', 'contact_urgence_nom', 'contact_urgence_telephone',
-        'medecin_traitant', 'updated_at',
+        'antecedents_medicaux', 'traitements_connus', 'medicaments_autorises',
+        'restrictions', 'informations_importantes', 'contact_urgence_nom',
+        'contact_urgence_telephone', 'medecin_traitant', 'observations', 'updated_at',
     ];
 }

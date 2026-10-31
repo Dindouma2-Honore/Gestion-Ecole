@@ -12,6 +12,7 @@ use App\Modules\Pedagogie\Models\BulletinMatiereNote;
 use App\Modules\Pedagogie\Models\BulletinVersion;
 use App\Modules\Pedagogie\Models\Evaluation;
 use App\Modules\Pedagogie\Models\Matiere;
+use App\Modules\Pedagogie\Models\DecisionPedagogique;
 use App\Modules\Pedagogie\Models\Note;
 use App\Modules\Pedagogie\Models\OffrePedagogique;
 use App\Modules\Scolarite\Contracts\ClasseServiceInterface;
@@ -121,15 +122,19 @@ class BulletinService implements BulletinServiceInterface
             ->get()
             ->each(fn (AffectationPedagogique $affectation) => $coefficients->put($affectation->matiere_id, $affectation->coefficient));
         $niveauId = $this->classeService?->getNiveauId($classeId);
-        if ($niveauId !== null) {
-            OffrePedagogique::query()
-                ->whereIn('matiere_id', $evaluations->pluck('matiere_id')->unique())
-                ->where('niveau_id', $niveauId)
-                ->where('annee_scolaire_id', $anneeScolaireId)
-                ->where('actif', true)
-                ->get()
-                ->each(fn (OffrePedagogique $offre) => $coefficients->put($offre->matiere_id, $offre->coefficient_matiere));
-        }
+        OffrePedagogique::query()
+            ->whereIn('matiere_id', $evaluations->pluck('matiere_id')->unique())
+            ->where(function ($query) use ($classeId, $niveauId): void {
+                $query->where('classe_id', $classeId)
+                    ->when($niveauId !== null, fn ($legacy) => $legacy->orWhere(function ($fallback) use ($niveauId): void {
+                        $fallback->whereNull('classe_id')->where('niveau_id', $niveauId);
+                    }));
+            })
+            ->where('annee_scolaire_id', $anneeScolaireId)
+            ->where('actif', true)
+            ->orderByRaw('classe_id IS NOT NULL')
+            ->get()
+            ->each(fn (OffrePedagogique $offre) => $coefficients->put($offre->matiere_id, $offre->coefficient_matiere));
         $notes = Note::whereIn('evaluation_id', $evaluations->pluck('id'))->where('absent', false)->whereNotNull('valeur')->get();
 
         // eleve_id => matiere_id => [['titre','date','valeur','bareme','note_sur_20'], ...]
@@ -311,8 +316,8 @@ class BulletinService implements BulletinServiceInterface
         $donneesEleve = $donneesClasse['eleves'][$eleveId];
 
         return DB::transaction(function () use ($eleveId, $classeId, $anneeScolaireId, $periodeId, $donneesClasse, $donneesEleve): Bulletin {
-            $eleve = $this->eleveService?->getEleve($eleveId);
-            $nomEleve = $eleve ? trim(($eleve['nom'] ?? '').' '.($eleve['prenom'] ?? '')) : null;
+            $eleve = rescue(fn () => $this->eleveService?->getEleve($eleveId), null);
+            $nomEleve = $eleve ? trim(($eleve['nom'] ?? '').' '.($eleve['prenom'] ?? '')) : "Élève #{$eleveId}";
 
             $nomClasse = $this->classeService
                 ? data_get(
@@ -404,6 +409,7 @@ class BulletinService implements BulletinServiceInterface
             $bulletin->update($champs);
 
             if ($nouveauStatut === 'publie') {
+                event(new \App\Modules\Pedagogie\Contracts\ReportCardPublished($bulletin->id));
                 BulletinVersion::create(['bulletin_id' => $bulletin->id, 'version' => $bulletin->version, 'donnees' => $bulletin->load('matieres.notes')->toArray(), 'cree_par' => $acteur]);
                 $this->genererDocument($bulletin);
             }
@@ -431,28 +437,15 @@ class BulletinService implements BulletinServiceInterface
         }
 
         $donnees = [
-            'bulletin' => $bulletin->loadMissing(['matieres.matiere', 'matieres.notes']),
+            'bulletin' => $bulletin->loadMissing(['matieres.matiere.categorie', 'matieres.notes']),
             'genereLe' => Carbon::now(),
-        ];
-        $template = null;
-        try {
-            $template = $this->documentTemplates?->getTemplateActif('BUL-SEC');
-        } catch (\Throwable) {
-            // Compatibilité pendant une migration progressive des données.
-        }
-        if ($template) {
-            $html = $this->documentTemplates->render($template, $donnees);
-            $bulletin->update([
-                'document_template_id' => $template->id,
-                'document_template_version' => $template->version,
-                'generated_at' => now(),
-                'rendered_html' => $html,
-            ]);
-        } elseif (view()->exists('pedagogie::bulletin')) {
-            $html = view('pedagogie::bulletin', $donnees)->render();
-        } else {
+        ] + $this->contexteImpression($bulletin);
+
+        if (! view()->exists('pedagogie::bulletin-modele')) {
             return;
         }
+        $html = view('pedagogie::bulletin-modele', $donnees)->render();
+        $bulletin->update(['generated_at' => now(), 'rendered_html' => $html]);
 
         $pdfDisponible = class_exists(Pdf::class);
         $extension = $pdfDisponible ? 'pdf' : 'html';
@@ -481,5 +474,100 @@ class BulletinService implements BulletinServiceInterface
                 @unlink($tmpPath);
             }
         }
+    }
+
+    private function contexteImpression(Bulletin $bulletin): array
+    {
+        $eleve = DB::table('eleves')->where('id', $bulletin->eleve_id)->first();
+        $classe = DB::table('classes')->where('id', $bulletin->classe_id)->first();
+        $annee = DB::table('annees_scolaires')->where('id', $bulletin->annee_scolaire_id)->first();
+        $periode = $bulletin->periode_id ? DB::table('periodes')->where('id', $bulletin->periode_id)->first() : null;
+        $etablissement = DB::table('config_etablissement')->first();
+        $enseignants = DB::table('affectations_pedagogiques')
+            ->join('enseignants', 'enseignants.id', '=', 'affectations_pedagogiques.enseignant_id')
+            ->join('employes', 'employes.id', '=', 'enseignants.employe_id')
+            ->where('affectations_pedagogiques.classe_id', $bulletin->classe_id)
+            ->where('affectations_pedagogiques.annee_scolaire_id', $bulletin->annee_scolaire_id)
+            ->where('affectations_pedagogiques.actif', true)
+            ->selectRaw("CONCAT(employes.nom, ' ', employes.prenom) as nom_complet, affectations_pedagogiques.matiere_id")
+            ->pluck('nom_complet', 'matiere_id')
+            ->all();
+
+        $professeurPrincipal = null;
+        if ($classe?->professeur_principal_id) {
+            $professeurPrincipal = DB::table('enseignants')
+                ->join('employes', 'employes.id', '=', 'enseignants.employe_id')
+                ->where('enseignants.id', $classe->professeur_principal_id)
+                ->selectRaw("CONCAT(employes.nom, ' ', employes.prenom) as nom_complet")
+                ->value('nom_complet');
+        }
+
+        $presences = DB::table('presences')
+            ->join('seances', 'seances.id', '=', 'presences.seance_id')
+            ->where('presences.eleve_id', $bulletin->eleve_id)
+            ->when($periode?->date_debut, fn ($query) => $query->whereDate('seances.date_seance', '>=', $periode->date_debut))
+            ->when($periode?->date_fin, fn ($query) => $query->whereDate('seances.date_seance', '<=', $periode->date_fin));
+
+        return [
+            'eleve' => $eleve,
+            'classe' => $classe,
+            'annee' => $annee,
+            'periode' => $periode,
+            'etablissement' => $etablissement,
+            'enseignants' => $enseignants,
+            'professeurPrincipal' => $professeurPrincipal,
+            'assiduite' => [
+                'absences_justifiees' => (clone $presences)->where('presences.statut', 'absent')->where('presences.justifie', true)->count(),
+                'absences_non_justifiees' => (clone $presences)->where('presences.statut', 'absent')->where('presences.justifie', false)->count(),
+                'retards' => (clone $presences)->where('presences.statut', 'retard')->count(),
+            ],
+            'numeroBulletin' => 'BUL-'.($annee?->libelle ? str_replace(['-', '/'], '', $annee->libelle) : date('Y')).'-'.str_pad((string) $bulletin->id, 6, '0', STR_PAD_LEFT),
+        ];
+    }
+
+    public function enregistrerDecisionConseil(
+        int $eleveId,
+        int $classeId,
+        int $anneeScolaireId,
+        string $decision,
+        ?string $motif = null,
+        ?int $validePar = null
+    ): object {
+        if (! in_array($decision, DecisionPedagogique::DECISIONS_VALIDES, true)) {
+            throw new \InvalidArgumentException("Décision invalide : '{$decision}'. Valeurs autorisées : ".implode(', ', DecisionPedagogique::DECISIONS_VALIDES));
+        }
+
+        $record = DecisionPedagogique::updateOrCreate(
+            ['eleve_id' => $eleveId, 'annee_scolaire_id' => $anneeScolaireId],
+            [
+                'classe_id' => $classeId,
+                'decision' => $decision,
+                'motif' => $motif,
+                'valide_par' => $validePar ?? Auth::id(),
+                'valide_le' => now(),
+            ]
+        );
+
+        // Synchroniser sur le bulletin de l'élève si existant
+        Bulletin::where('eleve_id', $eleveId)
+            ->where('annee_scolaire_id', $anneeScolaireId)
+            ->whereNull('periode_id') // bulletin annuel
+            ->update(['decision_conseil' => $decision]);
+
+        return $record;
+    }
+
+    public function getDecisionConseil(int $eleveId, int $anneeScolaireId): ?object
+    {
+        return DecisionPedagogique::where('eleve_id', $eleveId)
+            ->where('annee_scolaire_id', $anneeScolaireId)
+            ->first();
+    }
+
+    public function getDecisionsClasse(int $classeId, int $anneeScolaireId): Collection
+    {
+        return DecisionPedagogique::where('classe_id', $classeId)
+            ->where('annee_scolaire_id', $anneeScolaireId)
+            ->get();
     }
 }

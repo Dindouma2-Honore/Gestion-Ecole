@@ -9,8 +9,10 @@ use App\Modules\Socle\Contracts\DocumentServiceContract;
 use App\Modules\Socle\Exceptions\TailleFichierDepasseeException;
 use App\Modules\Socle\Exceptions\TypeFichierNonAutoriseException;
 use App\Modules\Socle\Models\Document;
+use App\Support\SafeFilename;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -23,11 +25,18 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 class DocumentService implements DocumentServiceContract
 {
-    private const TYPES_AUTORISES = ['pdf', 'jpg', 'jpeg', 'png', 'docx', 'xlsx'];
+    private const TYPES_AUTORISES = ['pdf', 'doc', 'jpg', 'jpeg', 'png', 'docx', 'xlsx'];
 
     private const TAILLE_MAX_KO = 5120; // 5 Mo
 
     private const NIVEAUX_CONFIDENTIALITE = ['public', 'interne', 'restreint'];
+
+    public function sourceInterne(int $documentId): array
+    {
+        $document = Document::findOrFail($documentId);
+
+        return ['path' => Storage::disk('documents')->path($document->fichier_path), 'extension' => strtolower(pathinfo($document->nom, PATHINFO_EXTENSION))];
+    }
 
     public function attacher(
         Model $documentable,
@@ -43,7 +52,7 @@ class DocumentService implements DocumentServiceContract
 
         try {
             return Document::create([
-                'nom' => $fichier->getClientOriginalName(),
+                'nom' => SafeFilename::make($fichier->getClientOriginalName()),
                 'categorie' => $categorie,
                 'fichier_path' => $path,
                 'mime_type' => $fichier->getMimeType() ?? 'application/octet-stream',
@@ -105,7 +114,7 @@ class DocumentService implements DocumentServiceContract
 
         try {
             return Document::create([
-                'nom' => trim($nom),
+                'nom' => SafeFilename::make($nom),
                 'categorie' => $categorie,
                 'fichier_path' => $path,
                 'mime_type' => $mimeType,
@@ -124,6 +133,10 @@ class DocumentService implements DocumentServiceContract
 
     public function peutAcceder(User $user, object $document): bool
     {
+        if ($document->categorie === 'programme_source') {
+            return $user->statut === 'actif' && ((int) $document->created_by === (int) $user->id || $user->hasRole('Fondateur'));
+        }
+
         return match ($document->niveau_confidentialite) {
             'public' => true,
             'interne' => (bool) $user->exists,
@@ -152,12 +165,12 @@ class DocumentService implements DocumentServiceContract
             throw new AccessDeniedHttpException("Vous n'êtes pas autorisé à télécharger ce document.");
         }
 
-        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
+        /** @var FilesystemAdapter $disk */
         $disk = Storage::disk('documents');
 
         return $disk->download(
             $document->fichier_path,
-            $document->nom,
+            SafeFilename::make((string) $document->nom),
             ['Content-Type' => $document->mime_type],
         );
     }

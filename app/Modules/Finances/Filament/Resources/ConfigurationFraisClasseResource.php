@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Finances\Filament\Resources;
 
+use App\Filament\Support\RecordModal;
 use App\Modules\Finances\Models\ConfigurationFraisClasse;
 use App\Modules\Scolarite\Contracts\ClasseServiceInterface;
 use App\Modules\Socle\Contracts\AnneeScolaireServiceContract;
@@ -25,7 +26,7 @@ class ConfigurationFraisClasseResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-calendar-days';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Finances';
+    protected static string|\UnitEnum|null $navigationGroup = 'Scolarité';
 
     protected static ?string $modelLabel = 'Frais annuels d’une classe';
 
@@ -60,12 +61,12 @@ class ConfigurationFraisClasseResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table->columns([
+        return RecordModal::configure($table->columns([
             TextColumn::make('classe_id')->label('Classe')->formatStateUsing(fn (int $state): string => app(ClasseServiceInterface::class)->getNomClasse($state)),
             TextColumn::make('annee_scolaire_id')->label('Année')->formatStateUsing(fn (int $state): string => app(AnneeScolaireServiceContract::class)->getAnneeScolaire($state)->libelle),
             TextColumn::make('montant_total')->money('XAF')->sortable(),
             TextColumn::make('tranches_count')->counts('tranches')->label('Tranches'),
-        ]);
+        ]), static::class);
     }
 
     public static function getPages(): array

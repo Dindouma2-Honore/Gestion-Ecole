@@ -13,6 +13,6 @@ class ArretCircuit extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'circuit_id', 'nom', 'ordre', 'heure_passage_matin', 'heure_passage_soir',
+        'circuit_id', 'nom', 'lieu', 'ordre', 'heure_passage_matin', 'heure_passage_soir',
     ];
 }

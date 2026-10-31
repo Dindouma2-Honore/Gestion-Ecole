@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Filament\Support\ModuleExperience;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -35,11 +36,22 @@ class ModuleDashboardsTest extends TestCase
             ->assertSee('Administration')
             ->assertSee('Ressources humaines')
             ->assertSee('Scolarité')
-            ->assertSee('/admin/eleves', false)
-            ->assertDontSee('href="http://localhost/admin/scolarite"', false)
+            ->assertSee('/admin/scolarite', false)
             ->assertSee('Pédagogie')
             ->assertSee('Finances')
-            ->assertSee('Assiduité');
+            ->assertSee('Assiduité')
+            ->assertSeeInOrder([
+                'Administration',
+                'Ressources humaines',
+                'Scolarité',
+                'Pédagogie',
+                'Communication',
+                'Finances',
+                'Assiduité',
+                'Vie scolaire',
+                'Logistique',
+                'Technique',
+            ]);
 
         $this->get('/admin')->assertRedirect('/accueil');
     }
@@ -50,21 +62,25 @@ class ModuleDashboardsTest extends TestCase
         $user->assignRole('Fondateur');
         $this->actingAs($user);
 
-        $this->get('/admin/socle')->assertRedirect('/admin/users');
+        $this->get('/admin/socle')->assertSuccessful();
 
         foreach ([
             '/admin/rh',
             '/admin/pedagogie',
             '/admin/finances',
             '/admin/assiduite',
+            '/admin/logistique',
+            '/admin/vie-scolaire',
+            '/admin/communication',
+            '/admin/technique/vue',
         ] as $url) {
-            $this->get($url)->assertSuccessful();
+            $this->get($url)->assertSuccessful()->assertSee('amb-module-hero', false)->assertSee('Accès rapides');
         }
 
-        $this->get('/admin/scolarite')->assertRedirect('/admin/eleves');
+        $this->get('/admin/scolarite')->assertSuccessful()->assertSee('amb-module-hero', false);
     }
 
-    public function test_module_navigation_does_not_expose_other_modules(): void
+    public function test_module_navigation_groups_other_authorized_modules(): void
     {
         $user = User::factory()->create(['statut' => 'actif']);
         $user->assignRole('Fondateur');
@@ -73,20 +89,20 @@ class ModuleDashboardsTest extends TestCase
             ->get('/admin/rh')
             ->assertSuccessful()
             ->assertSee('/admin/employes', false)
-            ->assertDontSee('/admin/finances', false)
-            ->assertDontSee('/admin/socle', false);
+            ->assertSee('AUTRES MODULES')->assertSee('/admin/finances', false)
+            ->assertSee('/admin/socle', false);
 
         $this->get('/admin/finances')
             ->assertSuccessful()
-            ->assertSee('/admin/finances/paiements', false)
-            ->assertDontSee('/admin/rh', false)
-            ->assertDontSee('/admin/socle', false);
+            ->assertDontSee('/admin/finances/paiements', false)
+            ->assertSee('/admin/rh', false)
+            ->assertSee('/admin/socle', false);
 
         $this->get('/admin/eleves')
             ->assertSuccessful()
             ->assertSee('/admin/eleves', false)
-            ->assertDontSee('/admin/rh', false)
-            ->assertDontSee('/admin/socle', false);
+            ->assertSee('/admin/rh', false)
+            ->assertSee('/admin/socle', false);
     }
 
     public function test_scolarite_and_pedagogie_dashboards_link_to_their_resources(): void
@@ -106,5 +122,16 @@ class ModuleDashboardsTest extends TestCase
             ->assertSee('/admin/matieres', false)
             ->assertSee('/admin/emploi-du-temps', false)
             ->assertDontSee('/admin/eleves', false);
+    }
+
+    public function test_parent_has_no_staff_shortcuts(): void
+    {
+        $user = User::factory()->create(['statut' => 'actif']);
+        $user->assignRole('Parent');
+        $this->actingAs($user);
+        foreach (['RH', 'Finances', 'Pedagogie', 'Technique'] as $module) {
+            $this->assertSame([], ModuleExperience::shortcuts($module));
+        }
+        $this->assertFalse(ModuleExperience::canOpenUrl(url('/admin/users')));
     }
 }

@@ -115,11 +115,38 @@ class VisualFoundationTest extends TestCase
             ->assertSee('Contexte de travail actuel');
 
         $this->get('/admin/socle')
-            ->assertRedirect('/admin/users');
+            ->assertSuccessful()
+            ->assertSee('Administration générale');
 
         $this->assertSame('warning', AmbassadorsDesign::VALIDATION_COLOR);
         $this->assertSame('gray', AmbassadorsDesign::ADMINISTRATION_KPI_COLOR);
         $this->assertSame('success', AmbassadorsDesign::statutColor('active'));
         $this->assertSame('danger', AmbassadorsDesign::statutColor('annule'));
+    }
+
+    public function test_all_filament_tables_share_the_reference_row_style_and_hover(): void
+    {
+        $theme = file_get_contents(resource_path('css/filament/admin/theme.css'));
+
+        $this->assertStringContainsString('Tables métier', $theme);
+        $this->assertStringContainsString('background-color: #edf4ff', $theme);
+        $this->assertStringContainsString('var(--amb-blue-700)', $theme);
+        $this->assertStringContainsString('.dark .fi-ta-ctn', $theme);
+        $this->assertStringContainsString('.fi-ta-table .fi-badge', $theme);
+        $this->assertStringContainsString('table-layout: fixed;', $theme);
+        $this->assertStringContainsString('overflow-x: clip;', $theme);
+        $this->assertStringContainsString('line-height: 1.5;', $theme);
+        $this->assertStringContainsString('min-height: 1.4rem;', $theme);
+        $this->assertStringContainsString('white-space: nowrap;', $theme);
+        $this->assertStringContainsString('text-overflow: ellipsis;', $theme);
+        $this->assertStringContainsString('.fi-ta-actions-header-cell', $theme);
+        $this->assertStringContainsString('.fi-ac-icon-btn-group', $theme);
+
+        $provider = file_get_contents(app_path('Providers/AppServiceProvider.php'));
+        $this->assertStringContainsString("recordActionsColumnLabel('Actions')", $provider);
+        $this->assertStringContainsString('modifyUngroupedRecordActionsUsing', $provider);
+        $this->assertStringContainsString('ActionGroup::configureUsing', $provider);
+        $this->assertStringContainsString("heroicon-m-ellipsis-vertical", $provider);
+        $this->assertStringContainsString('defaultPaginationPageOption(5)', $provider);
     }
 }

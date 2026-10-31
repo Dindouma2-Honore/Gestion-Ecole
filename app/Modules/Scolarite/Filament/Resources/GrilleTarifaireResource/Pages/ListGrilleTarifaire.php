@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Scolarite\Filament\Resources\GrilleTarifaireResource\Pages;
 
 use App\Modules\Scolarite\Filament\Resources\GrilleTarifaireResource;
-use Filament\Actions\CreateAction;
+use App\Modules\Scolarite\Filament\Support\ScolariteActions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListGrilleTarifaire extends ListRecords
@@ -14,6 +14,15 @@ class ListGrilleTarifaire extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [CreateAction::make()];
+        return [
+            ScolariteActions::create()->label('Nouveau tarif'),
+        ];
+    }
+
+    protected function getEmptyStateActions(): array
+    {
+        return [
+            ScolariteActions::create()->label('Nouveau tarif'),
+        ];
     }
 }

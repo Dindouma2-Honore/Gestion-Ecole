@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Assiduite\Contracts;
 
-use Illuminate\Support\Collection;
-
 interface SanteServiceContract
 {
     public function creerOuMettreAJourDossier(int $eleveId, array $donneesMedicales): object;

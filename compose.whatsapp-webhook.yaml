@@ -1,0 +1,24 @@
+# Temporary development webhook only. No host ports and no application files/secrets in the gateway.
+services:
+  whatsapp-webhook-gateway:
+    image: node:22-alpine
+    user: node
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    command: [node, /gateway/webhook-proxy.mjs]
+    volumes:
+      - ./tools/whatsapp/webhook-proxy.mjs:/gateway/webhook-proxy.mjs:ro
+    networks: [sail]
+  whatsapp-webhook-tunnel:
+    image: cloudflare/cloudflared:latest
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    command: [tunnel, --no-autoupdate, --protocol, http2, --url, 'http://whatsapp-webhook-gateway:8080']
+    depends_on: [whatsapp-webhook-gateway]
+    networks: [sail]
+networks:
+  sail:
+    external: true
+    name: ambassadors-app_sail

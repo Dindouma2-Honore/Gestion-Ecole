@@ -1,0 +1,17 @@
+services:
+    pedagogie-worker:
+        build:
+            context: .
+            dockerfile: infrastructure/pedagogie/Dockerfile
+        image: ambassadors-pedagogie-worker:local
+        user: "${WWWUSER:-1000}:${WWWGROUP:-1000}"
+        working_dir: /var/www/html
+        entrypoint: []
+        command: ["php", "artisan", "queue:work", "database", "--queue=pedagogie", "--sleep=3", "--tries=1", "--timeout=60", "--max-time=3600"]
+        restart: unless-stopped
+        volumes:
+            - .:/var/www/html
+        networks:
+            - sail
+        depends_on:
+            - mysql

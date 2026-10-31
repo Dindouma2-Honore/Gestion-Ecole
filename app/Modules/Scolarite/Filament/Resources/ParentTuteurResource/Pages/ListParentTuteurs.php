@@ -6,6 +6,7 @@ namespace App\Modules\Scolarite\Filament\Resources\ParentTuteurResource\Pages;
 
 use App\Filament\Concerns\HasCardListLayout;
 use App\Modules\Scolarite\Filament\Resources\ParentTuteurResource;
+use App\Modules\Scolarite\Filament\Support\ScolariteActions;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 use Livewire\Attributes\Url;
@@ -17,7 +18,7 @@ class ListParentTuteurs extends ListRecords
     protected static string $resource = ParentTuteurResource::class;
 
     #[Url(as: 'affichage')]
-    public string $affichage = 'cartes';
+    public string $affichage = 'tableau';
 
     public function usesCardLayout(): bool
     {
@@ -37,8 +38,15 @@ class ListParentTuteurs extends ListRecords
                 ->label(fn (): string => $this->usesCardLayout() ? 'Vue tableau' : 'Vue cartes')
                 ->icon(fn (): string => $this->usesCardLayout() ? 'heroicon-o-table-cells' : 'heroicon-o-squares-2x2')
                 ->color('gray')
-                ->action('toggleLayout'),
-            Actions\CreateAction::make()->label('Nouveau parent/tuteur'),
+                ->action(fn (): mixed => $this->toggleLayout()),
+            ScolariteActions::create()->label('Nouveau parent/tuteur'),
+        ];
+    }
+
+    protected function getEmptyStateActions(): array
+    {
+        return [
+            ScolariteActions::create()->label('Nouveau parent/tuteur'),
         ];
     }
 }

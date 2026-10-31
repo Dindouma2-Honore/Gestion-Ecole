@@ -2,6 +2,8 @@
 
 namespace App\Modules\RH\Filament\Resources;
 
+use App\Filament\Support\AmbassadorsDesign;
+use App\Modules\RH\Filament\Support\RhActions;
 use App\Modules\RH\Models\SanctionPersonnel;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -46,11 +48,18 @@ class SanctionPersonnelResource extends Resource
                 ->required(),
             Textarea::make('motif')
                 ->required(),
+            Textarea::make('observations')
+                ->label('Observations complémentaires')
+                ->nullable(),
             DatePicker::make('date_sanction')
                 ->required(),
             TextInput::make('duree_jours')
                 ->numeric()
                 ->helperText('Uniquement pour suspension'),
+            TextInput::make('document_justificatif_id')
+                ->label('Réf. Document justificatif (GED)')
+                ->numeric()
+                ->nullable(),
             Select::make('statut')
                 ->options([
                     'en_attente_validation' => 'En attente validation',
@@ -64,12 +73,15 @@ class SanctionPersonnelResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
+        AmbassadorsDesign::configureTable($table, null);
+
+        return $table->recordActions([RhActions::edit()])
             ->columns([
                 TextColumn::make('employe.nom_complet')->label('Employé')->sortable()->searchable(),
                 TextColumn::make('type')->sortable(),
                 TextColumn::make('date_sanction')->date()->sortable(),
                 TextColumn::make('duree_jours')->label('Durée (j)'),
+                TextColumn::make('document_justificatif_id')->label('Justificatif')->formatStateUsing(fn ($state) => $state ? "#{$state}" : '-')->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('statut')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {

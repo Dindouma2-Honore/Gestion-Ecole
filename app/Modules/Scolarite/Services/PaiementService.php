@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Scolarite\Services;
 
+use App\Support\SafeFilename;
+use App\Modules\Scolarite\Contracts\FraisServiceContract;
 use App\Modules\Scolarite\Contracts\InscriptionServiceInterface;
 use App\Modules\Scolarite\Contracts\PaiementServiceContract;
 use App\Modules\Scolarite\Exceptions\MontantPaiementInvalideException;
@@ -30,6 +32,7 @@ class PaiementService implements PaiementServiceContract
         private readonly ParametrageServiceContract $parametrageService,
         private readonly AnneeScolaireServiceContract $anneeScolaireService,
         private readonly DocumentServiceContract $documentService,
+        private readonly FraisServiceContract $fraisService,
     ) {}
 
     public function enregistrerPaiement(int $inscriptionId, float $montant, string $mode, ?string $referenceMobileMoney = null): Paiement
@@ -101,7 +104,7 @@ class PaiementService implements PaiementServiceContract
             $paiement->setRelation('inscription', $inscription);
             $document = $this->documentService->attacherContenu(
                 $paiement,
-                "Reçu {$paiement->numero_recu}.html",
+                SafeFilename::make("Reçu {$paiement->numero_recu}.html"),
                 view('scolarite::filament.recu-impression', ['paiement' => $paiement])->render(),
                 'text/html',
                 'recu_versement',
@@ -167,10 +170,45 @@ class PaiementService implements PaiementServiceContract
 
     public function getResteAPayer(int $inscriptionId): float
     {
+        $this->assurerFraisEleves($inscriptionId);
+
         return (float) FraisEleve::where('inscription_id', $inscriptionId)
             ->where('statut', 'du')
             ->get()
             ->sum(fn (FraisEleve $ligne): float => $ligne->resteAPayer());
+    }
+
+    /**
+     * Rend le grand livre `frais_eleve` de l'inscription s'il est vide.
+     *
+     * Les lignes de frais sont censées être figées au moment de
+     * l'inscription (FraisServiceContract::attacherFraisPourInscription),
+     * mais aucun appelant du module ne les créait : le reste à payer
+     * retournait toujours 0 et tout versement était rejeté comme
+     * excédentaire. On les attache donc à la lecture, de façon
+     * idempotente — dès qu'une ligne existe, on ne recrée rien.
+     *
+     * Lève TarifClasseNonDefiniException si la grille de la classe est
+     * manquante (le placeholder de l'UI attrape l'exception et affiche
+     * « Montant indisponible », l'enregistrement refuse le versement).
+     */
+    private function assurerFraisEleves(int $inscriptionId): void
+    {
+        if (FraisEleve::query()->where('inscription_id', $inscriptionId)->exists()) {
+            return;
+        }
+
+        $inscription = Inscription::query()->find($inscriptionId);
+
+        if (! $inscription) {
+            return;
+        }
+
+        $this->fraisService->attacherFraisPourInscription(
+            $inscriptionId,
+            (int) $inscription->classe_id,
+            (int) $inscription->annee_scolaire_id,
+        );
     }
 
     public function getResteParFrais(int $inscriptionId): Collection
@@ -204,8 +242,12 @@ class PaiementService implements PaiementServiceContract
     {
         $anneeScolaire = $this->anneeScolaireService->getAnneeScolaire($anneeScolaireId);
 
-        return $this->parametrageService->genererNumero('recu_versement', [
-            'ANNEE_SCOLAIRE' => $anneeScolaire->libelle,
-        ]);
+        do {
+            $numero = $this->parametrageService->genererNumero('recu_versement', [
+                'ANNEE_SCOLAIRE' => $anneeScolaire->libelle,
+            ]);
+        } while (\App\Modules\Scolarite\Models\Paiement::where('numero_recu', $numero)->exists());
+
+        return $numero;
     }
 }

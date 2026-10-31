@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Socle\Models;
 
 use App\Models\User;
+use App\Modules\Scolarite\Contracts\AcademicStructureReadContract;
+use App\Modules\Scolarite\Data\AcademicStructureItemDTO;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -19,9 +21,9 @@ class Reunion extends Model
         'date_heure' => 'datetime',
     ];
 
-    public function niveau(): BelongsTo
+    public function getNiveauAttribute(): ?AcademicStructureItemDTO
     {
-        return $this->belongsTo(Niveau::class);
+        return $this->niveau_id === null ? null : app(AcademicStructureReadContract::class)->niveau((int) $this->niveau_id);
     }
 
     public function creator(): BelongsTo

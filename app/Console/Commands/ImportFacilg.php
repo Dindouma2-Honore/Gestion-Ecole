@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Modules\Scolarite\Contracts\AcademicStructureCatalogContract;
+use App\Modules\Scolarite\Contracts\AcademicStructureManagementContract;
+use App\Modules\Scolarite\Contracts\AcademicStructureReadContract;
 use App\Support\Facilg\FacilgImportReport;
 use App\Support\Facilg\FacilgSqlDump;
 use Carbon\CarbonImmutable;
@@ -47,6 +50,7 @@ class ImportFacilg extends Command
             $this->importClosures($dump, $report, $years);
             $this->importSubjects($dump, $report, $years, $classes, $employees);
             $this->importUsers($dump, $report);
+            $this->ensureEmployeeAccounts($report);
             $this->importSettingsOnce($dump, $report);
 
             $this->option('dry-run') ? DB::rollBack() : DB::commit();
@@ -195,20 +199,22 @@ class ImportFacilg extends Command
 
                 continue;
             }
-            $levelId = DB::table('niveaux')->where('nom', $levelName)->value('id');
+            $levelId = collect(app(AcademicStructureCatalogContract::class)->niveaux())->firstWhere('name', $levelName)?->id;
             if (! $levelId) {
-                $levelId = $this->upsert('niveaux', 'niveau-facilg:'.Str::slug($levelName), [
-                    'nom' => $levelName,
-                    'code' => 'FAC-'.strtoupper(Str::slug($levelName)),
-                    'ordre' => match ($levelName) {
+                $legacyId = 'niveau-facilg:'.Str::slug($levelName);
+                $existing = app(AcademicStructureReadContract::class)->niveauByLegacyId($legacyId);
+                $levelId = app(AcademicStructureManagementContract::class)->importNiveau(
+                    $legacyId, $levelName, 'FAC-'.strtoupper(Str::slug($levelName)),
+                    match ($levelName) {
                         'Maternelle' => 10, 'Primaire' => 20, default => 30
                     },
-                    'description' => 'Niveau de regroupement explicite pour la reprise FACILG',
-                ], $report, 'classes');
+                    'Niveau de regroupement explicite pour la reprise FACILG',
+                )->id;
+                $report->count('classes', $existing ? 'ignorees' : 'importees');
             }
             $sourceId = $this->text($row['ID_Cl']);
             $legacy = $this->key($sourceId, $year);
-            $sectionId = DB::table('sections_scolaires')->where('nom', $this->text($row['Section_Cl'] ?? null))->value('id');
+            $sectionId = collect(app(AcademicStructureCatalogContract::class)->sections())->firstWhere('name', $this->text($row['Section_Cl'] ?? null))?->id;
             $existingClassId = DB::table('classes')->where('nom', $name)->where('annee_scolaire_id', $years[$year])->value('id');
             if ($existingClassId) {
                 DB::table('classes')->where('id', $existingClassId)->whereNull('facilg_legacy_id')->update(['facilg_legacy_id' => "classe:{$legacy}"]);
@@ -259,6 +265,22 @@ class ImportFacilg extends Command
                 'lieu_naissance' => $this->text($row['LieuNaiss_El'] ?? null),
                 'sexe' => $this->sex($row['Sexe_El'] ?? null),
                 'nationalite' => $this->text($row['Nationalite_El'] ?? null),
+                'ancien_etablissement' => $this->text($row['AncienEtab_El'] ?? null),
+                'email' => $this->text($row['EMail_El'] ?? null),
+                'nom_tuteur' => $this->text($row['NomTuteur_El'] ?? null),
+                'telephone_tuteur' => $this->text($row['TelTuteur_El'] ?? null),
+                'nom_pere' => $this->text($row['NomPere_El'] ?? null),
+                'nom_mere' => $this->text($row['NomMere_El'] ?? null),
+                'redoublant' => $this->yes($row['Redouble_El'] ?? null),
+                'transfere' => $this->yes($row['Transfere_El'] ?? null),
+                'numero_decision' => $this->text($row['NumDecision_El'] ?? null),
+                'exonere_frais_examen' => $this->yes($row['ExcFraisExam'] ?? null),
+                'demissionne' => $this->yes($row['Demission_El'] ?? null),
+                'exclu_scolaire' => $this->yes($row['ExcluScol_El'] ?? null),
+                'info_sms' => $this->yes($row['InfoSMS'] ?? null),
+                'moyenne_legacy' => is_numeric($row['MoyEl'] ?? null) ? $row['MoyEl'] : null,
+                'exclu_inscription' => $this->yes($row['ExclusInsc'] ?? null),
+                'bonus_scolaire' => (int) ($row['BonusScol'] ?? 0),
                 'observation' => implode("\n", $notes) ?: null,
                 'photo' => $this->text($row['RefPhoto_El'] ?? null),
                 'statut' => 'inscrit',
@@ -535,6 +557,17 @@ class ImportFacilg extends Command
                 'name' => "Utilisateur FACILG {$sourceId}", 'email' => strtolower($sourceId).'@facilg.import.local',
                 'password' => Hash::make(Str::random(48)), 'statut' => 'actif', 'must_change_password' => true,
             ], $report, 'utilisateurs');
+            $employee = DB::table('employes')->where('facilg_legacy_id', 'employe:'.$sourceId)->first();
+            if ($employee) {
+                DB::table('users')->where('id', $userId)->update([
+                    'name' => trim($employee->nom.' '.$employee->prenom),
+                    'nom' => $employee->nom,
+                    'prenom' => $employee->prenom,
+                    'telephone' => $employee->telephone,
+                    'updated_at' => now(),
+                ]);
+                DB::table('employes')->where('id', $employee->id)->update(['user_id' => $userId]);
+            }
             $code = $groups[$this->key($row['ID_G'] ?? '', $year)] ?? strtoupper($this->text($row['ID_G'] ?? null));
             $roleName = config("facilg.roles_utilisateurs.{$code}");
             if ($roleName && $roleId = DB::table('roles')->where('name', $roleName)->value('id')) {
@@ -543,6 +576,40 @@ class ImportFacilg extends Command
                 $report->warning('utilisateurs', "Groupe {$code} non confirmé pour {$sourceId}; poste administratif à reclasser.");
             }
         }
+    }
+
+    private function ensureEmployeeAccounts(FacilgImportReport $report): void
+    {
+        DB::table('employes')
+            ->whereNull('user_id')
+            ->orderBy('id')
+            ->each(function (object $employee) use ($report): void {
+                $email = filter_var($employee->email, FILTER_VALIDATE_EMAIL) ? strtolower($employee->email) : null;
+                if ($email !== null && DB::table('users')->where('email', $email)->exists()) {
+                    $email = null;
+                }
+                $email ??= "personnel.{$employee->id}@ambassadors.local";
+
+                $userId = DB::table('users')->insertGetId([
+                    'name' => trim($employee->nom.' '.$employee->prenom),
+                    'nom' => $employee->nom,
+                    'prenom' => $employee->prenom,
+                    'email' => $email,
+                    'telephone' => $employee->telephone,
+                    'password' => Hash::make(Str::random(48)),
+                    'statut' => 'desactive',
+                    'must_change_password' => true,
+                    'facilg_legacy_id' => "personnel-access:{$employee->id}",
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                DB::table('employes')->where('id', $employee->id)->update([
+                    'user_id' => $userId,
+                    'updated_at' => now(),
+                ]);
+                $report->count('comptes_personnel', 'importees');
+            });
     }
 
     private function importSettingsOnce(FacilgSqlDump $dump, FacilgImportReport $report): void

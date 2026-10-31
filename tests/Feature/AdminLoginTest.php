@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Filament\Auth\Login;
 use App\Models\User;
+use App\Modules\Socle\Models\ActivityLog;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -40,6 +41,12 @@ class AdminLoginTest extends TestCase
             ->assertRedirect('/accueil');
 
         $this->assertAuthenticatedAs($admin);
+        $this->assertDatabaseHas('activity_log', [
+            'log_name' => 'connexion',
+            'description' => 'Connexion réussie',
+            'causer_id' => $admin->id,
+            'ip_address' => '127.0.0.1',
+        ]);
     }
 
     public function test_login_fails_with_invalid_password(): void
@@ -58,5 +65,11 @@ class AdminLoginTest extends TestCase
             ])
             ->call('authenticate')
             ->assertHasFormErrors(['email']);
+
+        $this->assertTrue(ActivityLog::query()
+            ->where('log_name', 'connexion')
+            ->where('description', 'Échec de connexion')
+            ->where('causer_id', $admin->id)
+            ->exists());
     }
 }
